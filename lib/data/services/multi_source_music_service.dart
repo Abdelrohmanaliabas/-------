@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:youtube_explode_dart/youtube_explode_dart.dart' hide Playlist;
 import '../../domain/models/song.dart';
 import '../../domain/models/artist.dart';
 import '../../domain/models/album.dart';
@@ -509,6 +510,46 @@ class MultiSourceMusicApiService implements MusicApiService {
   }
 
   // -------------------------------------------------------------
+  // API 13: YouTube Explode Full-Length Audio Search
+  // -------------------------------------------------------------
+  Future<List<Song>> _searchYouTubeTracks(String query) async {
+    try {
+      final yt = YoutubeExplode();
+      try {
+        final searchResult = await yt.search.search(query).timeout(const Duration(seconds: 4));
+        final songs = <Song>[];
+        for (final video in searchResult.take(8)) {
+          final dur = video.duration ?? Duration.zero;
+          if (dur.inSeconds >= 45 && dur.inHours < 1) {
+            final title = video.title
+                .replaceAll(RegExp(r'\[.*?\]|\(.*?\)|Official Video|Official Audio|فيديو كليب|كليب|حصريا|جديد', caseSensitive: false), '')
+                .trim();
+            final artist = video.author.replaceAll(' - Topic', '').trim();
+            final artwork = video.thumbnails.highResUrl;
+
+            songs.add(Song(
+              id: 'yt_${video.id.value}',
+              title: title.isNotEmpty ? title : video.title,
+              artist: artist,
+              album: 'تسجيل كامل',
+              artworkUrl: artwork.isNotEmpty ? artwork : 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600',
+              audioUrl: 'https://youtube.com/watch?v=${video.id.value}',
+              duration: dur,
+              genre: 'موسيقى عربية',
+              playsCount: video.engagement.viewCount,
+            ));
+          }
+        }
+        return songs;
+      } finally {
+        yt.close();
+      }
+    } catch (_) {
+      return [];
+    }
+  }
+
+  // -------------------------------------------------------------
   // Search Deduplication & Ranking Algorithm
   // -------------------------------------------------------------
   List<Song> _deduplicateAndRank(List<Song> songs, String userQuery) {
@@ -580,6 +621,12 @@ class MultiSourceMusicApiService implements MusicApiService {
 
     // 2. Query 15+ API endpoints in parallel with variations
     final futures = <Future<List<Song>>>[];
+
+    // Source 0: YouTube Explode Full Tracks Search
+    futures.add(_searchYouTubeTracks(q));
+    if (variations.length > 1) {
+      futures.add(_searchYouTubeTracks(variations[1]));
+    }
 
     // Source 1: Deezer with raw query
     futures.add(_searchDeezer(q));

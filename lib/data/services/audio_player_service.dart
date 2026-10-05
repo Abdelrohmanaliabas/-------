@@ -6,6 +6,7 @@ import 'package:just_audio/just_audio.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 import '../../domain/models/song.dart';
 import 'download_service.dart';
+import 'full_audio_resolver.dart';
 
 class AudioPlayerService {
   final AudioPlayer _player = AudioPlayer();
@@ -83,13 +84,72 @@ class AudioPlayerService {
 
     _player.playerStateStream.listen((state) {
       if (state.processingState == ProcessingState.completed) {
-        // Just_audio handles loop/next according to playlist source, but ensure UI stays aligned
+        // Just_audio handles loop/next according to playlist source
       }
     });
   }
 
   Future<AudioSource> _createAudioSource(Song song) async {
-    final mediaItem = MediaItem(
+    // 1. Check if song already has localFilePath specified and file exists
+    if (song.localFilePath != null && File(song.localFilePath!).existsSync()) {
+      return AudioSource.uri(
+        Uri.file(song.localFilePath!),
+        tag: _buildMediaItem(song),
+      );
+    }
+
+    // 2. Check if cached in offline folder
+    try {
+      final offlinePath = await DownloadService.getExpectedOfflinePath(song.id);
+      if (File(offlinePath).existsSync()) {
+        return AudioSource.uri(
+          Uri.file(offlinePath),
+          tag: _buildMediaItem(song),
+        );
+      }
+    } catch (_) {}
+
+    // 3. Resolve Full Audio Stream (for 100% complete song duration)
+    var finalAudioUrl = song.audioUrl;
+    var finalDuration = song.duration;
+
+    if (song.duration.inSeconds <= 45 ||
+        song.audioUrl.contains('preview') ||
+        song.audioUrl.contains('soundhelix') ||
+        song.audioUrl.contains('youtube.com')) {
+      try {
+        final resolved = await FullAudioResolver.resolveFullAudioStream(song.title, song.artist);
+        if (resolved != null) {
+          finalAudioUrl = resolved.url;
+          finalDuration = resolved.duration;
+        }
+      } catch (e) {
+        debugPrint('Could not resolve full audio stream: $e');
+      }
+    }
+
+    final enrichedSong = song.copyWith(
+      audioUrl: finalAudioUrl,
+      duration: finalDuration,
+    );
+
+    // Update queue element if present so player slider & UI gets real full duration
+    final qIndex = _queue.indexWhere((s) => s.id == song.id);
+    if (qIndex != -1) {
+      _queue[qIndex] = enrichedSong;
+      if (_currentIndex == qIndex) {
+        _currentSongController.add(enrichedSong);
+      }
+    }
+
+    return AudioSource.uri(
+      Uri.parse(finalAudioUrl),
+      tag: _buildMediaItem(enrichedSong),
+    );
+  }
+
+  MediaItem _buildMediaItem(Song song) {
+    return MediaItem(
       id: song.id,
       album: song.album,
       title: song.title,
@@ -100,31 +160,6 @@ class AudioPlayerService {
       displayTitle: song.title,
       displaySubtitle: song.artist,
       displayDescription: song.album,
-    );
-
-    // 1. Check if song already has localFilePath specified and file exists
-    if (song.localFilePath != null && File(song.localFilePath!).existsSync()) {
-      return AudioSource.uri(
-        Uri.file(song.localFilePath!),
-        tag: mediaItem,
-      );
-    }
-
-    // 2. Check if cached in offline folder
-    try {
-      final offlinePath = await DownloadService.getExpectedOfflinePath(song.id);
-      if (File(offlinePath).existsSync()) {
-        return AudioSource.uri(
-          Uri.file(offlinePath),
-          tag: mediaItem,
-        );
-      }
-    } catch (_) {}
-
-    // 3. Fallback to HTTPS streaming
-    return AudioSource.uri(
-      Uri.parse(song.audioUrl),
-      tag: mediaItem,
     );
   }
 
