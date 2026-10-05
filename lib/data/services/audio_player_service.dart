@@ -96,28 +96,31 @@ class AudioPlayerService {
     });
   }
 
-  Future<AudioSource> _createAudioSource(Song song) async {
-    // 1. Check if song already has localFilePath specified and file exists
-    if (song.localFilePath != null && File(song.localFilePath!).existsSync()) {
+  Future<AudioSource> _createAudioSource(Song song, {bool isFallback = false}) async {
+    // 1. Check if song has an existing offline file on device (favorites/downloads)
+    final offlinePath = await DownloadService.findOfflinePathForSong(song);
+    if (offlinePath != null && File(offlinePath).existsSync()) {
+      debugPrint('⚡ Playing local offline file: $offlinePath');
+      final localSong = song.copyWith(
+        localFilePath: offlinePath,
+        isDownloaded: true,
+      );
       return AudioSource.uri(
-        Uri.file(song.localFilePath!),
-        tag: _buildMediaItem(song),
+        Uri.file(offlinePath),
+        tag: _buildMediaItem(localSong),
       );
     }
 
-    // 2. Check if cached in offline folder
-    try {
-      final offlinePath = await DownloadService.getExpectedOfflinePath(song.id);
-      if (File(offlinePath).existsSync()) {
-        return AudioSource.uri(
-          Uri.file(offlinePath),
-          tag: _buildMediaItem(song),
-        );
-      }
-    } catch (_) {}
+    if (isFallback) {
+      SongAudioResolver.clearCache(song);
+    }
 
-    // 3. Resolve authentic audio stream (guarantees real Arabic song audio)
-    final resolvedAudio = await SongAudioResolver.resolveAudio(song);
+    // 2. Resolve authentic audio stream
+    final resolvedAudio = await SongAudioResolver.resolveAudio(
+      song,
+      forceFresh: isFallback,
+      isFallback: isFallback,
+    );
     final enrichedSong = song.copyWith(
       audioUrl: resolvedAudio.url,
       duration: (resolvedAudio.duration != null && resolvedAudio.duration!.inSeconds > 0)
@@ -137,7 +140,7 @@ class AudioPlayerService {
     Map<String, String>? headers;
     if (resolvedAudio.url.contains('googlevideo.com')) {
       headers = {
-        'User-Agent': 'com.google.android.youtube/19.05.36 (Linux; U; Android 14; US) gzip',
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
       };
     }
 
@@ -169,14 +172,22 @@ class AudioPlayerService {
     _currentSongController.add(song);
 
     try {
-      final source = await _createAudioSource(song);
+      final source = await _createAudioSource(song, isFallback: false);
       await _player.setAudioSource(source, initialPosition: Duration.zero);
       await _player.play();
 
       // Preload next track quietly in background so next click is instant
       _preloadNextSong();
     } catch (e) {
-      debugPrint('Error playing song "${song.title}": $e');
+      debugPrint('Playback error on primary source for "${song.title}": $e. Attempting fallback stream...');
+      try {
+        final fallbackSource = await _createAudioSource(song, isFallback: true);
+        await _player.setAudioSource(fallbackSource, initialPosition: Duration.zero);
+        await _player.play();
+        _preloadNextSong();
+      } catch (fallbackError) {
+        debugPrint('Fallback stream error for "${song.title}": $fallbackError');
+      }
     }
   }
 

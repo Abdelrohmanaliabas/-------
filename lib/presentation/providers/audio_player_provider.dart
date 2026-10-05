@@ -138,6 +138,8 @@ class AudioPlayerNotifier extends StateNotifier<PlayerStateData> {
     try {
       state = state.copyWith(
         currentSong: song,
+        position: Duration.zero,
+        duration: song.duration.inSeconds > 0 ? song.duration : state.duration,
         isBuffering: true,
         errorMessage: null,
       );
@@ -153,8 +155,11 @@ class AudioPlayerNotifier extends StateNotifier<PlayerStateData> {
   Future<void> playPlaylist(List<Song> songs, {int initialIndex = 0}) async {
     try {
       if (songs.isEmpty) return;
+      final song = songs[initialIndex];
       state = state.copyWith(
-        currentSong: songs[initialIndex],
+        currentSong: song,
+        position: Duration.zero,
+        duration: song.duration.inSeconds > 0 ? song.duration : state.duration,
         isBuffering: true,
         errorMessage: null,
       );
@@ -180,6 +185,7 @@ class AudioPlayerNotifier extends StateNotifier<PlayerStateData> {
   }
 
   Future<void> seek(Duration position) async {
+    state = state.copyWith(position: position);
     await _service.seek(position);
   }
 
