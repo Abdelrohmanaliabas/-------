@@ -5,12 +5,13 @@ import '../../data/repositories/playlist_repository_impl.dart';
 import '../../data/services/audio_player_service.dart';
 import '../../data/services/download_service.dart';
 import '../../data/services/music_api_service.dart';
+import '../../data/services/multi_source_music_service.dart';
 import '../../domain/repositories/favorites_repository.dart';
 import '../../domain/repositories/music_repository.dart';
 import '../../domain/repositories/playlist_repository.dart';
 
 final musicApiServiceProvider = Provider<MusicApiService>((ref) {
-  return const MockMusicApiService();
+  return MultiSourceMusicApiService();
 });
 
 final favoritesRepositoryProvider = Provider<FavoritesRepository>((ref) {

@@ -24,8 +24,8 @@ void main() async {
     await JustAudioBackground.init(
       androidNotificationChannelId: 'com.mazikty.app.channel.audio',
       androidNotificationChannelName: 'مازيكتي للموسيقى',
-      androidNotificationOngoing: true,
-      androidStopForegroundOnPause: true,
+      androidNotificationOngoing: false,
+      androidStopForegroundOnPause: false,
       androidNotificationIcon: 'mipmap/ic_launcher',
     );
   } catch (e) {

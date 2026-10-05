@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:audio_session/audio_session.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 import '../../domain/models/song.dart';
+import 'download_service.dart';
 
 class AudioPlayerService {
   final AudioPlayer _player = AudioPlayer();
@@ -15,7 +17,44 @@ class AudioPlayerService {
   final _queueController = StreamController<List<Song>>.broadcast();
 
   AudioPlayerService() {
+    _initAudioSession();
     _initSubscriptions();
+  }
+
+  Future<void> _initAudioSession() async {
+    try {
+      final session = await AudioSession.instance;
+      await session.configure(const AudioSessionConfiguration.music());
+      session.interruptionEventStream.listen((event) {
+        if (event.begin) {
+          switch (event.type) {
+            case AudioInterruptionType.duck:
+              _player.setVolume(0.5);
+              break;
+            case AudioInterruptionType.pause:
+            case AudioInterruptionType.unknown:
+              _player.pause();
+              break;
+          }
+        } else {
+          switch (event.type) {
+            case AudioInterruptionType.duck:
+              _player.setVolume(1.0);
+              break;
+            case AudioInterruptionType.pause:
+              _player.play();
+              break;
+            case AudioInterruptionType.unknown:
+              break;
+          }
+        }
+      });
+      session.becomingNoisyEventStream.listen((_) {
+        _player.pause();
+      });
+    } catch (e) {
+      debugPrint('AudioSession init error: $e');
+    }
   }
 
   AudioPlayer get player => _player;
@@ -49,7 +88,7 @@ class AudioPlayerService {
     });
   }
 
-  AudioSource _createAudioSource(Song song) {
+  Future<AudioSource> _createAudioSource(Song song) async {
     final mediaItem = MediaItem(
       id: song.id,
       album: song.album,
@@ -57,9 +96,13 @@ class AudioPlayerService {
       artist: song.artist,
       artUri: Uri.tryParse(song.artworkUrl),
       duration: song.duration,
+      playable: true,
+      displayTitle: song.title,
+      displaySubtitle: song.artist,
+      displayDescription: song.album,
     );
 
-    // Support offline downloaded files if present
+    // 1. Check if song already has localFilePath specified and file exists
     if (song.localFilePath != null && File(song.localFilePath!).existsSync()) {
       return AudioSource.uri(
         Uri.file(song.localFilePath!),
@@ -67,6 +110,18 @@ class AudioPlayerService {
       );
     }
 
+    // 2. Check if cached in offline folder
+    try {
+      final offlinePath = await DownloadService.getExpectedOfflinePath(song.id);
+      if (File(offlinePath).existsSync()) {
+        return AudioSource.uri(
+          Uri.file(offlinePath),
+          tag: mediaItem,
+        );
+      }
+    } catch (_) {}
+
+    // 3. Fallback to HTTPS streaming
     return AudioSource.uri(
       Uri.parse(song.audioUrl),
       tag: mediaItem,
@@ -88,7 +143,7 @@ class AudioPlayerService {
     _currentSongController.add(_queue[_currentIndex]);
 
     try {
-      final audioSources = _queue.map(_createAudioSource).toList();
+      final audioSources = await Future.wait(_queue.map(_createAudioSource));
       await _player.setAudioSources(
         audioSources,
         initialIndex: _currentIndex,

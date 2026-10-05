@@ -16,6 +16,12 @@ class DownloadService {
   Stream<Map<String, double>> get progressStream => _progressController.stream;
   Map<String, double> get currentProgress => Map.unmodifiable(_downloadProgress);
 
+  static Future<String> getExpectedOfflinePath(String songId) async {
+    final docsDir = await getApplicationDocumentsDirectory();
+    final sanitizedTitle = songId.replaceAll(RegExp(r'[^\w\s]+'), '_');
+    return '${docsDir.path}/mazikty_offline/$sanitizedTitle.mp3';
+  }
+
   Future<Directory> _getDownloadsDirectory() async {
     final docsDir = await getApplicationDocumentsDirectory();
     final downloadDir = Directory('${docsDir.path}/mazikty_offline');

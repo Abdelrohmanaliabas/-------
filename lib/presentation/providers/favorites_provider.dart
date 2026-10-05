@@ -1,12 +1,16 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../domain/models/song.dart';
-import '../../domain/repositories/favorites_repository.dart';
+import 'package:mazikty/data/services/download_service.dart';
+import 'package:mazikty/domain/models/song.dart';
+import 'package:mazikty/domain/repositories/favorites_repository.dart';
 import 'service_providers.dart';
 
 class FavoritesNotifier extends StateNotifier<AsyncValue<List<Song>>> {
   final FavoritesRepository _repository;
+  final DownloadService _downloadService;
 
-  FavoritesNotifier(this._repository) : super(const AsyncValue.loading()) {
+  FavoritesNotifier(this._repository, this._downloadService)
+      : super(const AsyncValue.loading()) {
     loadFavorites();
   }
 
@@ -27,16 +31,40 @@ class FavoritesNotifier extends StateNotifier<AsyncValue<List<Song>>> {
     List<Song> updated;
     if (exists) {
       updated = currentList.where((s) => s.id != song.id).toList();
+      state = AsyncValue.data(updated);
+      try {
+        await _repository.toggleFavorite(song);
+      } catch (e) {
+        state = AsyncValue.data(currentList);
+      }
     } else {
-      updated = [song.copyWith(isFavorite: true), ...currentList];
-    }
-    state = AsyncValue.data(updated);
+      // Adding to favorites: also auto-cache for offline availability
+      final newFav = song.copyWith(isFavorite: true);
+      updated = [newFav, ...currentList];
+      state = AsyncValue.data(updated);
 
+      try {
+        await _repository.toggleFavorite(song);
+        // Start background offline download so it works without web/internet
+        _autoCacheSongForOffline(newFav);
+      } catch (e) {
+        state = AsyncValue.data(currentList);
+      }
+    }
+  }
+
+  Future<void> _autoCacheSongForOffline(Song song) async {
     try {
-      await _repository.toggleFavorite(song);
+      final downloaded = await _downloadService.downloadSong(song);
+      if (downloaded != null) {
+        await _repository.updateFavorite(downloaded);
+        final current = state.value ?? [];
+        final updated = current.map((s) => s.id == song.id ? downloaded : s).toList();
+        state = AsyncValue.data(updated);
+        debugPrint('Song "${song.title}" cached offline for favorites playback.');
+      }
     } catch (e) {
-      // Revert if error
-      state = AsyncValue.data(currentList);
+      debugPrint('Background offline caching skipped for "${song.title}": $e');
     }
   }
 
@@ -48,5 +76,6 @@ class FavoritesNotifier extends StateNotifier<AsyncValue<List<Song>>> {
 final favoritesProvider =
     StateNotifierProvider<FavoritesNotifier, AsyncValue<List<Song>>>((ref) {
   final repo = ref.watch(favoritesRepositoryProvider);
-  return FavoritesNotifier(repo);
+  final downloadService = ref.watch(downloadServiceProvider);
+  return FavoritesNotifier(repo, downloadService);
 });

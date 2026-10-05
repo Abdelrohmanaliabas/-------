@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../domain/models/song.dart';
 import '../../domain/repositories/favorites_repository.dart';
@@ -21,9 +22,14 @@ class FavoritesRepositoryImpl implements FavoritesRepository {
 
     try {
       final List<dynamic> list = jsonDecode(jsonString);
-      return list
-          .map((item) => Song.fromJson(item as Map<String, dynamic>).copyWith(isFavorite: true))
-          .toList();
+      return list.map((item) {
+        final song = Song.fromJson(item as Map<String, dynamic>).copyWith(isFavorite: true);
+        // Verify local file exists for offline readiness
+        if (song.localFilePath != null && File(song.localFilePath!).existsSync()) {
+          return song.copyWith(isDownloaded: true);
+        }
+        return song;
+      }).toList();
     } catch (_) {
       return [];
     }
@@ -40,6 +46,16 @@ class FavoritesRepositoryImpl implements FavoritesRepository {
     final favorites = await getFavorites();
     if (!favorites.any((s) => s.id == song.id)) {
       favorites.insert(0, song.copyWith(isFavorite: true));
+      await _saveFavorites(favorites);
+    }
+  }
+
+  @override
+  Future<void> updateFavorite(Song song) async {
+    final favorites = await getFavorites();
+    final index = favorites.indexWhere((s) => s.id == song.id);
+    if (index >= 0) {
+      favorites[index] = song.copyWith(isFavorite: true);
       await _saveFavorites(favorites);
     }
   }

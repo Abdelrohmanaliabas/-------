@@ -51,6 +51,27 @@ class FavoritesScreen extends ConsumerWidget {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withAlpha(25),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: AppColors.primary.withAlpha(70), width: 0.8),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.offline_pin_rounded, color: AppColors.primary, size: 22),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'مفضلتك متاحة بالكامل أوفلاين وتعمل تلقائياً دون اتصال بالإنترنت',
+                        style: AppTypography.labelSmall.copyWith(color: AppColors.primaryLight),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 child: Text(

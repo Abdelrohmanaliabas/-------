@@ -54,19 +54,28 @@ class HomeScreen extends ConsumerWidget {
                       Row(
                         children: [
                           Container(
-                            width: 38,
-                            height: 38,
-                            decoration: const BoxDecoration(
+                            width: 44,
+                            height: 44,
+                            decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              gradient: AppColors.primaryGradient,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.primary.withAlpha(90),
+                                  blurRadius: 12,
+                                  spreadRadius: 1,
+                                ),
+                              ],
                             ),
-                            child: const Icon(
-                              Icons.graphic_eq_rounded,
-                              color: Colors.black,
-                              size: 22,
+                            child: ClipOval(
+                              child: Image.asset(
+                                'assets/images/logo.png',
+                                width: 44,
+                                height: 44,
+                                fit: BoxFit.cover,
+                              ),
                             ),
                           ),
-                          const SizedBox(width: 10),
+                          const SizedBox(width: 12),
                           Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [

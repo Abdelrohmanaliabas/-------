@@ -1,0 +1,28 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "مازيكتي - Mazikty",
+            "request": "launch",
+            "type": "dart",
+            "cwd": "C:\\projects\\mazikty",
+            "program": "lib/main.dart"
+        },
+        {
+            "name": "مازيكتي - Mazikty (Profile)",
+            "request": "launch",
+            "type": "dart",
+            "cwd": "C:\\projects\\mazikty",
+            "flutterMode": "profile",
+            "program": "lib/main.dart"
+        },
+        {
+            "name": "مازيكتي - Mazikty (Release)",
+            "request": "launch",
+            "type": "dart",
+            "cwd": "C:\\projects\\mazikty",
+            "flutterMode": "release",
+            "program": "lib/main.dart"
+        }
+    ]
+}

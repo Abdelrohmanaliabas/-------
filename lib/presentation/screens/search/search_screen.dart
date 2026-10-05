@@ -117,12 +117,41 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
   }
 
   Widget _buildEmptyOrSuggestionsView() {
-    final suggestions = ['نصير شمة', 'عمر خيرت', 'تقاسيم عود', 'مقام النهاوند', 'جاز شرقي', 'لينا شاماميان'];
+    final suggestions = [
+      'عود البطل',
+      'عمرو دياب',
+      'بنت الجيران',
+      'شيرين',
+      'الغزالة رايقة',
+      'سطلانة',
+      'أحمد سعد',
+      'ويجز',
+      'نصير شمة',
+      'عمر خيرت',
+      'فيروز',
+      'أم كلثوم',
+    ];
 
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
-        Text('عمليات البحث الشائعة', style: AppTypography.titleMedium),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text('عمليات البحث الأكثر رواجاً', style: AppTypography.titleMedium),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Text(
+                '15+ محرك بحث',
+                style: AppTypography.bodySmall.copyWith(color: AppColors.primary, fontSize: 11, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
         const SizedBox(height: 14),
         Wrap(
           spacing: 10,
@@ -146,8 +175,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         const SizedBox(height: 40),
         const EmptyStateView(
           icon: Icons.search_rounded,
-          title: 'ابحث في مكتبة مازيكتي',
-          message: 'اكتشف أفضل الأعمال الموسيقية العربية، السيمفونيات، والتقاسيم الأصيلة بسهولة وسرعة.',
+          title: 'ابحث في ملايين الأغاني والمهرجانات',
+          message: 'محرك بحث فائق يبحث عبر أكثر من 15 مصدراً وقاعدة بيانات موسيقية عالمية وعربية لتجد أي أغنية فوراً.',
         ),
       ],
     );
