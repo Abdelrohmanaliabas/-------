@@ -7,6 +7,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/utils/app_exceptions.dart';
 import '../../domain/models/song.dart';
+import 'song_audio_resolver.dart';
 
 class DownloadService {
   static const String _downloadKey = 'mazikty_downloaded_songs';
@@ -70,7 +71,7 @@ class DownloadService {
       _downloadProgress[song.id] = 0.05;
       _progressController.add(_downloadProgress);
 
-      final downloadUrl = song.audioUrl;
+      final downloadUrl = await SongAudioResolver.resolveAudioStream(song);
       final songDuration = song.duration;
 
       final dir = await _getDownloadsDirectory();

@@ -6,6 +6,7 @@ import 'package:just_audio/just_audio.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 import '../../domain/models/song.dart';
 import 'download_service.dart';
+import 'song_audio_resolver.dart';
 
 class AudioPlayerService {
   final AudioPlayer _player = AudioPlayer();
@@ -108,10 +109,22 @@ class AudioPlayerService {
       }
     } catch (_) {}
 
-    // 3. Fallback to HTTPS streaming
+    // 3. Resolve authentic audio stream (guarantees real Arabic song audio)
+    final resolvedUrl = await SongAudioResolver.resolveAudioStream(song);
+    final enrichedSong = song.copyWith(audioUrl: resolvedUrl);
+
+    // Update queue element if present so player slider & UI gets real stream
+    final qIndex = _queue.indexWhere((s) => s.id == song.id);
+    if (qIndex != -1) {
+      _queue[qIndex] = enrichedSong;
+      if (_currentIndex == qIndex) {
+        _currentSongController.add(enrichedSong);
+      }
+    }
+
     return AudioSource.uri(
-      Uri.parse(song.audioUrl),
-      tag: _buildMediaItem(song),
+      Uri.parse(resolvedUrl),
+      tag: _buildMediaItem(enrichedSong),
     );
   }
 
