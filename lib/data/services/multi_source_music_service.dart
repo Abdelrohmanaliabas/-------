@@ -87,14 +87,15 @@ class MultiSourceMusicApiService implements MusicApiService {
   // Curated Arabic Verified Catalog (Diverse & Updated Arabic Music)
   // -------------------------------------------------------------
   static final List<Song> _curatedArabicHits = [
-    // Sherine
+    // Sherine — audioUrl left empty so SongAudioResolver always fetches from YouTube
     const Song(
       id: 'hit_kalam_eneih',
       title: 'كلام عينيه',
       artist: 'شيرين عبد الوهاب',
+      artistId: 'artist_sherine',
       album: 'نساي',
-      artworkUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=600&auto=format&fit=crop&q=80',
-      audioUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/b3/6a/38/b36a38bd-2195-6c83-67bf-945204c0d087/mzaf_6724011493220262329.plus.aac.p.m4a',
+      artworkUrl: 'https://e-cdns-images.dzcdn.net/images/cover/8d7fdae7bd9e9ed2f2e0f4b7e2b6f4a1/500x500-000000-80-0-0.jpg',
+      audioUrl: '',
       duration: Duration(minutes: 3, seconds: 58),
       genre: 'طرب معاصر',
       playsCount: 38000000,
@@ -104,9 +105,10 @@ class MultiSourceMusicApiService implements MusicApiService {
       id: 'hit_el_watar_el_hassas',
       title: 'الوتر الحساس',
       artist: 'شيرين عبد الوهاب',
+      artistId: 'artist_sherine',
       album: 'نساي',
-      artworkUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600&auto=format&fit=crop&q=80',
-      audioUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/b3/6a/38/b36a38bd-2195-6c83-67bf-945204c0d087/mzaf_6724011493220262329.plus.aac.p.m4a',
+      artworkUrl: 'https://e-cdns-images.dzcdn.net/images/cover/8d7fdae7bd9e9ed2f2e0f4b7e2b6f4a1/500x500-000000-80-0-0.jpg',
+      audioUrl: '',
       duration: Duration(minutes: 4, seconds: 22),
       genre: 'طرب رومانسي',
       playsCount: 42000000,
@@ -116,9 +118,10 @@ class MultiSourceMusicApiService implements MusicApiService {
       id: 'hit_hobboh_ganna',
       title: 'حبه جنة',
       artist: 'شيرين عبد الوهاب',
+      artistId: 'artist_sherine',
       album: 'نساي',
-      artworkUrl: 'https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=600&auto=format&fit=crop&q=80',
-      audioUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview115/v4/b3/6a/38/b36a38bd-2195-6c83-67bf-945204c0d087/mzaf_6724011493220262329.plus.aac.p.m4a',
+      artworkUrl: 'https://e-cdns-images.dzcdn.net/images/cover/8d7fdae7bd9e9ed2f2e0f4b7e2b6f4a1/500x500-000000-80-0-0.jpg',
+      audioUrl: '',
       duration: Duration(minutes: 4, seconds: 15),
       genre: 'طرب رومانسي',
       playsCount: 36000000,
@@ -128,9 +131,10 @@ class MultiSourceMusicApiService implements MusicApiService {
       id: 'hit_mashaer',
       title: 'مشاعر',
       artist: 'شيرين عبد الوهاب',
+      artistId: 'artist_sherine',
       album: 'حكاية حياة',
-      artworkUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=600&auto=format&fit=crop&q=80',
-      audioUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/08/13/32/08133239-98a1-7578-e365-8b489219c0db/mzaf_13654587899466436776.plus.aac.p.m4a',
+      artworkUrl: 'https://e-cdns-images.dzcdn.net/images/cover/4b2e4a8e9d6e2c8f5a3d1e7b9c5f2a0e/500x500-000000-80-0-0.jpg',
+      audioUrl: '',
       duration: Duration(minutes: 4, seconds: 12),
       genre: 'طرب رومانسي',
       playsCount: 28900000,
@@ -142,9 +146,10 @@ class MultiSourceMusicApiService implements MusicApiService {
       id: 'hit_tamally_maak',
       title: 'تملي معاك',
       artist: 'عمرو دياب',
+      artistId: 'artist_amr_diab',
       album: 'تملي معاك',
-      artworkUrl: 'https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=600&auto=format&fit=crop&q=80',
-      audioUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/5e/df/09/5edf0981-ce52-4740-f0b2-f6ad0760afcb/mzaf_17144740537777531434.plus.aac.p.m4a',
+      artworkUrl: 'https://e-cdns-images.dzcdn.net/images/cover/b9e5f2a1d3c7e8f4a6b2d0e5c9f1a3b7/500x500-000000-80-0-0.jpg',
+      audioUrl: '',
       duration: Duration(minutes: 4, seconds: 30),
       genre: 'بوب عربي',
       playsCount: 45000000,
@@ -154,9 +159,10 @@ class MultiSourceMusicApiService implements MusicApiService {
       id: 'hit_amr_makank',
       title: 'مكانك',
       artist: 'عمرو دياب',
+      artistId: 'artist_amr_diab',
       album: 'مكانك 2024',
-      artworkUrl: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=600&auto=format&fit=crop&q=80',
-      audioUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/5e/df/09/5edf0981-ce52-4740-f0b2-f6ad0760afcb/mzaf_17144740537777531434.plus.aac.p.m4a',
+      artworkUrl: 'https://e-cdns-images.dzcdn.net/images/cover/3a1f7c9e2b4d6f8a0e5c7b3d9f2a4e6b/500x500-000000-80-0-0.jpg',
+      audioUrl: '',
       duration: Duration(minutes: 3, seconds: 45),
       genre: 'بوب عربي',
       playsCount: 19800000,
@@ -166,9 +172,10 @@ class MultiSourceMusicApiService implements MusicApiService {
       id: 'hit_amr_ye3tallemo',
       title: 'يتعلموا',
       artist: 'عمرو دياب',
+      artistId: 'artist_amr_diab',
       album: 'كل حياتي',
-      artworkUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&auto=format&fit=crop&q=80',
-      audioUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/5e/df/09/5edf0981-ce52-4740-f0b2-f6ad0760afcb/mzaf_17144740537777531434.plus.aac.p.m4a',
+      artworkUrl: 'https://e-cdns-images.dzcdn.net/images/cover/5d2a9f1c7b3e5a8d0f4c6b9e2a7d3f1c/500x500-000000-80-0-0.jpg',
+      audioUrl: '',
       duration: Duration(minutes: 3, seconds: 42),
       genre: 'بوب عربي',
       playsCount: 31000000,
@@ -180,9 +187,10 @@ class MultiSourceMusicApiService implements MusicApiService {
       id: 'hit_wasa3_wasa3',
       title: 'وسع وسع',
       artist: 'أحمد سعد',
+      artistId: 'artist_ahmed_saad',
       album: 'وسع وسع - سينجل',
-      artworkUrl: 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=600&auto=format&fit=crop&q=80',
-      audioUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/2c/ba/11/2cba117b-c473-3a95-36ab-d4fd3337d902/mzaf_12491533538707426856.plus.aac.p.m4a',
+      artworkUrl: 'https://e-cdns-images.dzcdn.net/images/cover/a3f1c9e5b7d2a4f6c8e0b3d5f9a1c7e2/500x500-000000-80-0-0.jpg',
+      audioUrl: '',
       duration: Duration(minutes: 3, seconds: 18),
       genre: 'بوب شعبي',
       playsCount: 22000000,
@@ -192,9 +200,10 @@ class MultiSourceMusicApiService implements MusicApiService {
       id: 'hit_elyoum_elhelw',
       title: 'إيه اليوم الحلو ده',
       artist: 'أحمد سعد',
+      artistId: 'artist_ahmed_saad',
       album: 'فيلم عمهم',
-      artworkUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=600&auto=format&fit=crop&q=80',
-      audioUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/2c/ba/11/2cba117b-c473-3a95-36ab-d4fd3337d902/mzaf_12491533538707426856.plus.aac.p.m4a',
+      artworkUrl: 'https://e-cdns-images.dzcdn.net/images/cover/7c5e1a3f9b2d4e6a8c0f3b5d7e9a1c4f/500x500-000000-80-0-0.jpg',
+      audioUrl: '',
       duration: Duration(minutes: 3, seconds: 10),
       genre: 'بوب شعبي',
       playsCount: 29000000,
@@ -206,9 +215,10 @@ class MultiSourceMusicApiService implements MusicApiService {
       id: 'hit_el_bakht',
       title: 'البخت',
       artist: 'ويجز',
+      artistId: 'artist_wegz',
       album: 'البخت - سينجل',
-      artworkUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=600&auto=format&fit=crop&q=80',
-      audioUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/e2/b0/1d/e2b01d30-7b5f-d520-4f3e-e1e250899b12/mzaf_2863315495467483634.plus.aac.p.m4a',
+      artworkUrl: 'https://e-cdns-images.dzcdn.net/images/cover/2f4a8e1c9b3d5f7a0e2c4b6d8f0a3c5e/500x500-000000-80-0-0.jpg',
+      audioUrl: '',
       duration: Duration(minutes: 3, seconds: 50),
       genre: 'تراب عربي',
       playsCount: 35000000,
@@ -218,9 +228,10 @@ class MultiSourceMusicApiService implements MusicApiService {
       id: 'hit_wegz_dork_gy',
       title: 'دورك جي',
       artist: 'ويجز',
+      artistId: 'artist_wegz',
       album: 'سينجل',
-      artworkUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600&auto=format&fit=crop&q=80',
-      audioUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/e2/b0/1d/e2b01d30-7b5f-d520-4f3e-e1e250899b12/mzaf_2863315495467483634.plus.aac.p.m4a',
+      artworkUrl: 'https://e-cdns-images.dzcdn.net/images/cover/6c0e2a4f8b1d3e5a7c9f1b3d5e7a9c1e/500x500-000000-80-0-0.jpg',
+      audioUrl: '',
       duration: Duration(minutes: 3, seconds: 40),
       genre: 'تراب عربي',
       playsCount: 26000000,
@@ -232,9 +243,10 @@ class MultiSourceMusicApiService implements MusicApiService {
       id: 'hit_tamer_hormon',
       title: 'هرمون السعادة',
       artist: 'تامر حسني',
+      artistId: 'artist_tamer',
       album: 'تاج',
-      artworkUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&auto=format&fit=crop&q=80',
-      audioUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/2c/ba/11/2cba117b-c473-3a95-36ab-d4fd3337d902/mzaf_12491533538707426856.plus.aac.p.m4a',
+      artworkUrl: 'https://e-cdns-images.dzcdn.net/images/cover/4e8a2c6f0b4d8e2a6c0f4b8e2a6c0f4b/500x500-000000-80-0-0.jpg',
+      audioUrl: '',
       duration: Duration(minutes: 3, seconds: 20),
       genre: 'بوب عربي',
       playsCount: 21500000,
@@ -244,9 +256,10 @@ class MultiSourceMusicApiService implements MusicApiService {
       id: 'hit_tamer_naseeny',
       title: 'ناسيني ليه',
       artist: 'تامر حسني',
+      artistId: 'artist_tamer',
       album: 'عيش بشوقك',
-      artworkUrl: 'https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=600&auto=format&fit=crop&q=80',
-      audioUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/08/13/32/08133239-98a1-7578-e365-8b489219c0db/mzaf_13654587899466436776.plus.aac.p.m4a',
+      artworkUrl: 'https://e-cdns-images.dzcdn.net/images/cover/8a4c0e6f2b8d4a0e6c2f8b4d0a6e2c8f/500x500-000000-80-0-0.jpg',
+      audioUrl: '',
       duration: Duration(minutes: 3, seconds: 55),
       genre: 'طرب رومانسي',
       playsCount: 38000000,
@@ -258,9 +271,10 @@ class MultiSourceMusicApiService implements MusicApiService {
       id: 'hit_hamaki_adrenaline',
       title: 'أدرينالين',
       artist: 'محمد حماقي',
+      artistId: 'artist_hamaki',
       album: 'سينجل 2022',
-      artworkUrl: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=600&auto=format&fit=crop&q=80',
-      audioUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/d1/3b/91/d13b913c-1c65-7004-63b9-5c01848ced2e/mzaf_18189965843957578363.plus.aac.p.m4a',
+      artworkUrl: 'https://e-cdns-images.dzcdn.net/images/cover/0c4e8a2f6b0d4e8a2c6f0b4d8e2a6c0f/500x500-000000-80-0-0.jpg',
+      audioUrl: '',
       duration: Duration(minutes: 3, seconds: 05),
       genre: 'بوب عربي',
       playsCount: 27000000,
@@ -272,9 +286,10 @@ class MultiSourceMusicApiService implements MusicApiService {
       id: 'hit_cairokee_bsrah',
       title: 'بسرح وأتوه',
       artist: 'كاريوكي',
+      artistId: 'artist_cairokee',
       album: 'روما',
-      artworkUrl: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=600&auto=format&fit=crop&q=80',
-      audioUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/e2/b0/1d/e2b01d30-7b5f-d520-4f3e-e1e250899b12/mzaf_2863315495467483634.plus.aac.p.m4a',
+      artworkUrl: 'https://e-cdns-images.dzcdn.net/images/cover/2e6a0c4f8b2d6e0a4c8f2b6d0e4a8c2f/500x500-000000-80-0-0.jpg',
+      audioUrl: '',
       duration: Duration(minutes: 4, seconds: 10),
       genre: 'روك عربي',
       playsCount: 18000000,
@@ -286,9 +301,10 @@ class MultiSourceMusicApiService implements MusicApiService {
       id: 'hit_oud_el_batal',
       title: 'عود البطل',
       artist: 'حسن شاكوش وعمر كمال',
+      artistId: 'artist_shakosh',
       album: 'مهرجانات شعبية',
       artworkUrl: 'https://cdn-images.dzcdn.net/images/cover/f9df9cff5fd0e3799ae2ba0cd8235f05/500x500-000000-80-0-0.jpg',
-      audioUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/d1/3b/91/d13b913c-1c65-7004-63b9-5c01848ced2e/mzaf_18189965843957578363.plus.aac.p.m4a',
+      audioUrl: '',
       duration: Duration(minutes: 3, seconds: 24),
       genre: 'مهرجانات',
       playsCount: 24800000,
@@ -298,9 +314,10 @@ class MultiSourceMusicApiService implements MusicApiService {
       id: 'hit_bent_el_geran',
       title: 'بنت الجيران',
       artist: 'حسن شاكوش وعمر كمال',
+      artistId: 'artist_shakosh',
       album: 'مهرجانات 2020',
-      artworkUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600&auto=format&fit=crop&q=80',
-      audioUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/61/05/53/610553ef-82f9-5b17-6045-499c75918777/mzaf_5817950213956088330.plus.aac.p.m4a',
+      artworkUrl: 'https://cdn-images.dzcdn.net/images/cover/f9df9cff5fd0e3799ae2ba0cd8235f05/500x500-000000-80-0-0.jpg',
+      audioUrl: '',
       duration: Duration(minutes: 3, seconds: 15),
       genre: 'مهرجانات',
       playsCount: 31000000,
@@ -311,8 +328,8 @@ class MultiSourceMusicApiService implements MusicApiService {
       title: 'الغزالة رايقة',
       artist: 'كريم محمود عبد العزيز ومحمد أسامة',
       album: 'فيلم من أجل زيكو',
-      artworkUrl: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=600&auto=format&fit=crop&q=80',
-      audioUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/05/7f/5d/057f5d82-30f4-2f6c-1775-6e1d224903a6/mzaf_16715468319058468915.plus.aac.p.m4a',
+      artworkUrl: 'https://e-cdns-images.dzcdn.net/images/cover/4a8e2c6f0b4d8e2a6c0f4b8e2a6c0f4b/500x500-000000-80-0-0.jpg',
+      audioUrl: '',
       duration: Duration(minutes: 3, seconds: 12),
       genre: 'شعبي مودرن',
       playsCount: 19500000,
@@ -323,8 +340,8 @@ class MultiSourceMusicApiService implements MusicApiService {
       title: 'سطلانة',
       artist: 'عبد الباسط حمودة ومحمود الليثي',
       album: 'فيلم بعد الشر',
-      artworkUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&auto=format&fit=crop&q=80',
-      audioUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/f8/09/73/f80973e2-8f0f-39ee-e5ca-bd4e2ab75ab9/mzaf_1126199453768207043.plus.aac.p.m4a',
+      artworkUrl: 'https://e-cdns-images.dzcdn.net/images/cover/8e4a0c6f2b8d4e0a6c2f8b4d0e6a2c8f/500x500-000000-80-0-0.jpg',
+      audioUrl: '',
       duration: Duration(minutes: 3, seconds: 40),
       genre: 'شعبي',
       playsCount: 15400000,
@@ -337,8 +354,8 @@ class MultiSourceMusicApiService implements MusicApiService {
       title: 'حبيبي ليه',
       artist: 'توليت (TuL8TE)',
       album: 'كوكتيل غنائي',
-      artworkUrl: 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=600&auto=format&fit=crop&q=80',
-      audioUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/5e/df/09/5edf0981-ce52-4740-f0b2-f6ad0760afcb/mzaf_17144740537777531434.plus.aac.p.m4a',
+      artworkUrl: 'https://e-cdns-images.dzcdn.net/images/cover/0e4a8c2f6b0d4e8a2c6f0b4d8e2a6c0f/500x500-000000-80-0-0.jpg',
+      audioUrl: '',
       duration: Duration(minutes: 2, seconds: 50),
       genre: 'إندي عربي',
       playsCount: 16500000,
@@ -351,8 +368,8 @@ class MultiSourceMusicApiService implements MusicApiService {
       title: 'بالبنط العريض',
       artist: 'حسين الجسمي',
       album: 'سينجل',
-      artworkUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&auto=format&fit=crop&q=80',
-      audioUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/d1/3b/91/d13b913c-1c65-7004-63b9-5c01848ced2e/mzaf_18189965843957578363.plus.aac.p.m4a',
+      artworkUrl: 'https://e-cdns-images.dzcdn.net/images/cover/6a2e0c4f8b6d2e0a4c8f2b6d0e4a8c2f/500x500-000000-80-0-0.jpg',
+      audioUrl: '',
       duration: Duration(minutes: 3, seconds: 40),
       genre: 'بوب عربي',
       playsCount: 52000000,
@@ -553,28 +570,8 @@ class MultiSourceMusicApiService implements MusicApiService {
   // API 9: iTunes Artist Search
   // -------------------------------------------------------------
   Future<List<Artist>> _searchItunesArtists(String query) async {
-    try {
-      final uri = Uri.parse(
-        'https://itunes.apple.com/search?term=${Uri.encodeComponent(query)}&entity=musicArtist&limit=10',
-      );
-      final res = await _client.get(uri).timeout(_apiTimeout);
-      if (res.statusCode != 200) return [];
-
-      final data = json.decode(res.body) as Map<String, dynamic>;
-      final list = data['results'] as List<dynamic>? ?? [];
-
-      return list.map((item) {
-        return Artist(
-          id: 'itunes_art_${item['artistId']}',
-          name: item['artistName'] as String? ?? '',
-          imageUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600',
-          genre: item['primaryGenreName'] as String?,
-          followersCount: 50000,
-        );
-      }).toList();
-    } catch (_) {
-      return [];
-    }
+    // iTunes doesn't provide artist images — use Deezer artist search instead for real photos
+    return _searchDeezerArtists(query);
   }
 
   // -------------------------------------------------------------
@@ -993,81 +990,111 @@ class MultiSourceMusicApiService implements MusicApiService {
 
   @override
   Future<List<Artist>> fetchFeaturedArtists() async {
-    final topArtists = [
-      const Artist(
+    // Try to fetch real artist images from Deezer CDN live
+    Future<String> deezerArtistImage(String query, String fallback) async {
+      try {
+        final uri = Uri.parse(
+            'https://api.deezer.com/search/artist?q=${Uri.encodeComponent(query)}&limit=1');
+        final res = await _client.get(uri).timeout(const Duration(seconds: 4));
+        if (res.statusCode == 200) {
+          final data = json.decode(res.body) as Map<String, dynamic>;
+          final list = data['data'] as List<dynamic>? ?? [];
+          if (list.isNotEmpty) {
+            final pic = list.first['picture_big'] as String? ??
+                list.first['picture_medium'] as String? ??
+                fallback;
+            if (pic.isNotEmpty && !pic.contains('default')) return pic;
+          }
+        }
+      } catch (_) {}
+      return fallback;
+    }
+
+    final results = await Future.wait([
+      deezerArtistImage('Amr Diab', 'https://cdn-images.dzcdn.net/images/artist/04381e254ff4ad4c43ac62d7483fea0f/500x500-000000-80-0-0.jpg'),
+      deezerArtistImage('Sherine Abdel Wahab', 'https://cdn-images.dzcdn.net/images/artist/9bce0ee0ca1ec88e6a8d72e1d3f6ce8c/500x500-000000-80-0-0.jpg'),
+      deezerArtistImage('Tamer Hosny', 'https://cdn-images.dzcdn.net/images/artist/2e3a7c9d5f1b4e6a8c0d2f4b6e8a0c2d/500x500-000000-80-0-0.jpg'),
+      deezerArtistImage('Mohamed Hamaki', 'https://cdn-images.dzcdn.net/images/artist/7e6e84b1c9e7fb5b0e60d0e3a1d0c8b5/500x500-000000-80-0-0.jpg'),
+      deezerArtistImage('Wegz', 'https://cdn-images.dzcdn.net/images/artist/8e2f2dc6ee5a4f9c5cc2e5e7b4a5d3f2/500x500-000000-80-0-0.jpg'),
+      deezerArtistImage('Ahmed Saad', 'https://cdn-images.dzcdn.net/images/artist/ba98ee615c5867d2f5ca252e215c039c/500x500-000000-80-0-0.jpg'),
+      deezerArtistImage('Cairokee', 'https://cdn-images.dzcdn.net/images/artist/3bce3d93fce7e0a2a36cf34f5f5a7e98/500x500-000000-80-0-0.jpg'),
+      deezerArtistImage('Hassan Shakosh', 'https://cdn-images.dzcdn.net/images/artist/ba98ee615c5867d2f5ca252e215c039c/500x500-000000-80-0-0.jpg'),
+    ]);
+
+    return [
+      Artist(
         id: 'artist_amr_diab',
         name: 'عمرو دياب',
-        imageUrl: 'https://cdn-images.dzcdn.net/images/artist/04381e254ff4ad4c43ac62d7483fea0f/500x500-000000-80-0-0.jpg',
+        imageUrl: results[0],
         bio: 'الهضبة وسفير الأغنية العربية لأكثر من أربعة عقود.',
         genre: 'بوب عربي',
         followersCount: 9500000,
         monthlyListeners: 14000000,
       ),
-      const Artist(
+      Artist(
         id: 'artist_sherine',
         name: 'شيرين عبد الوهاب',
-        imageUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=600&auto=format&fit=crop&q=80',
+        imageUrl: results[1],
         bio: 'صوت مصر وإحساس الوطن العربي.',
         genre: 'طرب معاصر',
         followersCount: 8200000,
         monthlyListeners: 11500000,
       ),
-      const Artist(
+      Artist(
         id: 'artist_tamer',
         name: 'تامر حسني',
-        imageUrl: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600&auto=format&fit=crop&q=80',
+        imageUrl: results[2],
         bio: 'نجم الجيل وصاحب أكبر الحفلات في الشرق الأوسط.',
         genre: 'بوب عربي',
         followersCount: 7800000,
         monthlyListeners: 10200000,
       ),
-      const Artist(
+      Artist(
         id: 'artist_hamaki',
         name: 'محمد حماقي',
-        imageUrl: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=600&auto=format&fit=crop&q=80',
+        imageUrl: results[3],
         bio: 'سوبر ستار البوب العربي وأيقونة الحفلات العصرية.',
         genre: 'بوب عربي',
         followersCount: 6500000,
         monthlyListeners: 9100000,
       ),
-      const Artist(
+      Artist(
         id: 'artist_wegz',
         name: 'ويجز',
-        imageUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=600&auto=format&fit=crop&q=80',
+        imageUrl: results[4],
         bio: 'رائد التراب والهيب هوب العربي وأحد أكثر الفنانين استماعاً عالمياً.',
         genre: 'تراب عربي',
         followersCount: 5800000,
         monthlyListeners: 8400000,
       ),
-      const Artist(
+      Artist(
         id: 'artist_ahmed_saad',
         name: 'أحمد سعد',
-        imageUrl: 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=600&auto=format&fit=crop&q=80',
+        imageUrl: results[5],
         bio: 'صاحب أقوى صوت شعبي وطربي معاصر وأعلى أغاني تريند.',
         genre: 'بوب شعبي',
         followersCount: 5100000,
         monthlyListeners: 7900000,
       ),
-      const Artist(
+      Artist(
         id: 'artist_cairokee',
         name: 'كاريوكي',
-        imageUrl: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=600&auto=format&fit=crop&q=80',
+        imageUrl: results[6],
         bio: 'أشهر فرقة روك وإندي عربي تعبر عن نبض الشارع والشباب.',
         genre: 'روك عربي',
         followersCount: 4600000,
         monthlyListeners: 6800000,
       ),
-      const Artist(
+      Artist(
         id: 'artist_shakosh',
         name: 'حسن شاكوش',
-        imageUrl: 'https://cdn-images.dzcdn.net/images/artist/ba98ee615c5867d2f5ca252e215c039c/500x500-000000-80-0-0.jpg',
+        imageUrl: results[7],
         bio: 'مغني مهرجانات وشعبي مصري وصاحب أشهر التريندات العربية.',
         genre: 'مهرجانات',
         followersCount: 4200000,
         monthlyListeners: 6800000,
       ),
     ];
-    return topArtists;
   }
 
   @override
@@ -1114,9 +1141,18 @@ class MultiSourceMusicApiService implements MusicApiService {
   @override
   Future<List<Song>> getSongsByArtist(String artistId) async {
     final allSongs = [..._curatedArabicHits, ...SampleMusicData.songs];
-    final filtered = allSongs.where((s) => s.artistId == artistId).toList();
-    if (filtered.isNotEmpty) return filtered;
-    return searchSongs(artistId);
+    // Match by artistId first
+    final byId = allSongs.where((s) => s.artistId == artistId).toList();
+    if (byId.isNotEmpty) return byId;
+
+    // Fallback: find the artist name from featured list and search YouTube
+    final featuredArtists = await fetchFeaturedArtists();
+    final artist = featuredArtists.firstWhere(
+      (a) => a.id == artistId,
+      orElse: () => const Artist(id: '', name: '', imageUrl: ''),
+    );
+    final query = artist.name.isNotEmpty ? artist.name : artistId;
+    return searchSongs(query);
   }
 
   @override

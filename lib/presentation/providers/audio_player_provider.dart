@@ -145,9 +145,11 @@ class AudioPlayerNotifier extends StateNotifier<PlayerStateData> {
       );
       await _service.playSong(song, playlist: playlist);
     } catch (e) {
+      final msg = e.toString().replaceFirst('Exception: ', '');
       state = state.copyWith(
         isBuffering: false,
-        errorMessage: 'تعذر تشغيل الأغنية، يرجى التأكد من الاتصال بالإنترنت',
+        isPlaying: false,
+        errorMessage: msg.isNotEmpty ? msg : 'تعذر تشغيل الأغنية، يرجى التأكد من الاتصال بالإنترنت',
       );
     }
   }

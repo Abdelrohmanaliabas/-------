@@ -5,6 +5,7 @@ import 'package:audio_session/audio_session.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 import '../../domain/models/song.dart';
+import 'audio_streaming_proxy.dart';
 import 'download_service.dart';
 import 'song_audio_resolver.dart';
 
@@ -115,7 +116,7 @@ class AudioPlayerService {
       SongAudioResolver.clearCache(song);
     }
 
-    // 2. Resolve authentic audio stream
+    // 2. Resolve audio info (videoId, url, duration) via YouTube
     final resolvedAudio = await SongAudioResolver.resolveAudio(
       song,
       forceFresh: isFallback,
@@ -128,7 +129,7 @@ class AudioPlayerService {
           : song.duration,
     );
 
-    // Update queue element if present so player slider & UI gets real stream
+    // Update queue element so UI slider & mini-player reflect real duration
     final qIndex = _queue.indexWhere((s) => s.id == song.id);
     if (qIndex != -1) {
       _queue[qIndex] = enrichedSong;
@@ -137,16 +138,29 @@ class AudioPlayerService {
       }
     }
 
-    Map<String, String>? headers;
-    if (resolvedAudio.url.contains('googlevideo.com')) {
-      headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-      };
+    // 3. Determine the YouTube video ID to route through local proxy.
+    //    Priority: videoId from resolver → yt_ song id prefix → direct url fallback
+    String? ytVideoIdStr;
+    if (resolvedAudio.videoId != null) {
+      ytVideoIdStr = resolvedAudio.videoId!.value;
+    } else if (song.id.startsWith('yt_')) {
+      ytVideoIdStr = song.id.substring(3);
+    }
+
+    String playbackUrl;
+    if (ytVideoIdStr != null && ytVideoIdStr.isNotEmpty) {
+      // Always route YouTube content through local proxy to bypass CDN 403 errors
+      await AudioStreamingProxy.ensureStarted();
+      playbackUrl = AudioStreamingProxy.getStreamUrl(ytVideoIdStr);
+      debugPrint('🔀 Routing "${song.title}" via proxy (videoId: $ytVideoIdStr)');
+    } else {
+      // Non-YouTube source (e.g. Deezer/iTunes preview, Internet Archive)
+      playbackUrl = resolvedAudio.url;
+      debugPrint('▶️ Playing direct URL for "${song.title}": $playbackUrl');
     }
 
     return AudioSource.uri(
-      Uri.parse(resolvedAudio.url),
-      headers: headers,
+      Uri.parse(playbackUrl),
       tag: _buildMediaItem(enrichedSong),
     );
   }
@@ -179,15 +193,10 @@ class AudioPlayerService {
       // Preload next track quietly in background so next click is instant
       _preloadNextSong();
     } catch (e) {
-      debugPrint('Playback error on primary source for "${song.title}": $e. Attempting fallback stream...');
-      try {
-        final fallbackSource = await _createAudioSource(song, isFallback: true);
-        await _player.setAudioSource(fallbackSource, initialPosition: Duration.zero);
-        await _player.play();
-        _preloadNextSong();
-      } catch (fallbackError) {
-        debugPrint('Fallback stream error for "${song.title}": $fallbackError');
-      }
+      debugPrint('Playback error for "${song.title}": $e');
+      // Clear cached entry so next attempt does a fresh resolve
+      SongAudioResolver.clearCache(song);
+      rethrow;
     }
   }
 
