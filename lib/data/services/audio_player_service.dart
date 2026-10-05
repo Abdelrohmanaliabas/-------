@@ -7,6 +7,7 @@ import 'package:just_audio_background/just_audio_background.dart';
 import '../../domain/models/song.dart';
 import 'audio_streaming_proxy.dart';
 import 'download_service.dart';
+import 'listening_history_service.dart';
 import 'song_audio_resolver.dart';
 
 class AudioPlayerService {
@@ -76,15 +77,11 @@ class AudioPlayerService {
   Stream<bool> get shuffleModeEnabledStream => _player.shuffleModeEnabledStream;
 
   void _initSubscriptions() {
-    _player.currentIndexStream.listen((index) {
-      if (index != null && index >= 0 && index < _queue.length) {
-        _currentIndex = index;
-        _currentSongController.add(_queue[index]);
-      }
-    });
-
     _player.playerStateStream.listen((state) {
       if (state.processingState == ProcessingState.completed) {
+        if (_currentIndex >= 0 && _currentIndex < _queue.length) {
+          ListeningHistoryService.recordSongCompleted(_queue[_currentIndex]);
+        }
         if (_player.loopMode == LoopMode.one) {
           _player.seek(Duration.zero);
           _player.play();
@@ -92,6 +89,15 @@ class AudioPlayerService {
           skipToNext();
         } else if (_player.loopMode == LoopMode.all && _queue.isNotEmpty) {
           skipToIndex(0);
+        }
+      }
+    });
+
+    _player.positionStream.listen((pos) {
+      final dur = _player.duration;
+      if (dur != null && dur.inSeconds > 30 && pos.inSeconds >= (dur.inSeconds * 0.70)) {
+        if (_currentIndex >= 0 && _currentIndex < _queue.length) {
+          ListeningHistoryService.recordSongCompleted(_queue[_currentIndex]);
         }
       }
     });
@@ -130,7 +136,9 @@ class AudioPlayerService {
     );
 
     // Update queue element so UI slider & mini-player reflect real duration
-    final qIndex = _queue.indexWhere((s) => s.id == song.id);
+    final qIndex = (_currentIndex >= 0 && _currentIndex < _queue.length && _queue[_currentIndex].id == song.id)
+        ? _currentIndex
+        : _queue.indexWhere((s) => s.id == song.id);
     if (qIndex != -1) {
       _queue[qIndex] = enrichedSong;
       if (_currentIndex == qIndex) {
@@ -237,6 +245,7 @@ class AudioPlayerService {
     if (_currentIndex < 0 || _currentIndex >= _queue.length) return;
     final song = _queue[_currentIndex];
     _currentSongController.add(song);
+    ListeningHistoryService.recordSongPlayed(song);
 
     try {
       final source = await _createAudioSource(song, isFallback: false);
@@ -246,6 +255,10 @@ class AudioPlayerService {
       // Preload next track quietly in background so next click is instant
       _preloadNextSong();
     } catch (e) {
+      if (e.toString().contains('interrupted') || e.toString().contains('abort')) {
+        debugPrint('Playback loading superseded by new track request.');
+        return;
+      }
       debugPrint('Playback error for "${song.title}": $e — attempting fallback resolve…');
       SongAudioResolver.clearCache(song);
       if (song.id.startsWith('yt_')) {
@@ -257,8 +270,11 @@ class AudioPlayerService {
         await _player.play();
         _preloadNextSong();
       } catch (fallbackErr) {
+        if (fallbackErr.toString().contains('interrupted') ||
+            fallbackErr.toString().contains('abort')) {
+          return;
+        }
         debugPrint('Fallback also failed for "${song.title}": $fallbackErr');
-        rethrow;
       }
     }
   }
@@ -282,7 +298,11 @@ class AudioPlayerService {
 
   Future<void> playSong(Song song, {List<Song>? playlist}) async {
     final list = (playlist != null && playlist.isNotEmpty) ? playlist : [song];
-    final index = list.indexWhere((s) => s.id == song.id);
+    int index = list.indexWhere((s) => s.id == song.id);
+    if (index == -1) {
+      index = list.indexWhere((s) =>
+          s.title.trim().toLowerCase() == song.title.trim().toLowerCase());
+    }
     await playPlaylist(list, initialIndex: index >= 0 ? index : 0);
   }
 
@@ -318,29 +338,28 @@ class AudioPlayerService {
 
   Future<void> skipToNext() async {
     if (_queue.isEmpty) return;
-    if (_currentIndex < _queue.length - 1) {
-      _currentIndex++;
-      await _loadAndPlayCurrentSong();
-    } else if (_player.loopMode == LoopMode.all) {
-      _currentIndex = 0;
-      await _loadAndPlayCurrentSong();
-    }
+    final nextIdx = (_currentIndex >= 0 && _currentIndex < _queue.length - 1)
+        ? _currentIndex + 1
+        : 0;
+    await skipToIndex(nextIdx);
   }
 
   Future<void> skipToPrevious() async {
+    if (_queue.isEmpty) return;
     if (_player.position.inSeconds > 3) {
       await _player.seek(Duration.zero);
       return;
     }
-    if (_currentIndex > 0) {
-      _currentIndex--;
-      await _loadAndPlayCurrentSong();
-    }
+    final prevIdx = (_currentIndex > 0 && _currentIndex < _queue.length)
+        ? _currentIndex - 1
+        : (_queue.length - 1);
+    await skipToIndex(prevIdx);
   }
 
   Future<void> skipToIndex(int index) async {
     if (index >= 0 && index < _queue.length) {
       _currentIndex = index;
+      _queueController.add(_queue);
       await _loadAndPlayCurrentSong();
     }
   }
@@ -368,6 +387,14 @@ class AudioPlayerService {
         break;
     }
     await _player.setLoopMode(next);
+  }
+
+  void setQueue(List<Song> newQueue, {int? currentIndex}) {
+    _queue = List.from(newQueue);
+    if (currentIndex != null && currentIndex >= 0 && currentIndex < _queue.length) {
+      _currentIndex = currentIndex;
+    }
+    _queueController.add(_queue);
   }
 
   void addToQueue(Song song) {

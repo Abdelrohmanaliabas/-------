@@ -42,10 +42,17 @@ class SongTile extends ConsumerWidget {
     return InkWell(
       onTap: onTap ??
           () {
-            ref.read(audioPlayerProvider.notifier).playSong(
-                  song,
-                  playlist: playlist,
-                );
+            if (playlist != null && playlist!.isNotEmpty) {
+              final targetIndex = (index != null && index! >= 0 && index! < playlist!.length)
+                  ? index!
+                  : playlist!.indexWhere((s) => s.id == song.id);
+              ref.read(audioPlayerProvider.notifier).playPlaylist(
+                    playlist!,
+                    initialIndex: targetIndex >= 0 ? targetIndex : 0,
+                  );
+            } else {
+              ref.read(audioPlayerProvider.notifier).playSong(song);
+            }
           },
       borderRadius: BorderRadius.circular(12),
       child: Padding(

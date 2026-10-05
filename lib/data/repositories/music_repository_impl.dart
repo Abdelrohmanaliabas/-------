@@ -5,6 +5,7 @@ import '../../domain/models/playlist.dart';
 import '../../domain/models/genre.dart';
 import '../../domain/repositories/music_repository.dart';
 import '../../domain/repositories/favorites_repository.dart';
+import '../services/listening_history_service.dart';
 import '../services/music_api_service.dart';
 
 class MusicRepositoryImpl implements MusicRepository {
@@ -25,6 +26,10 @@ class MusicRepositoryImpl implements MusicRepository {
 
   @override
   Future<List<Song>> getRecentlyPlayed() async {
+    final history = await ListeningHistoryService.getRecentlyPlayed(limit: 15);
+    if (history.isNotEmpty) {
+      return _enrichSongsWithFavorites(history);
+    }
     final songs = await _apiService.fetchRecentlyPlayed();
     return _enrichSongsWithFavorites(songs);
   }
@@ -117,6 +122,12 @@ class MusicRepositoryImpl implements MusicRepository {
   @override
   Future<List<Song>> getSongsByGenre(String genreId) async {
     final songs = await _apiService.getSongsByGenre(genreId);
+    return _enrichSongsWithFavorites(songs);
+  }
+
+  @override
+  Future<List<Song>> getRelatedSongs(Song song) async {
+    final songs = await _apiService.getRelatedSongs(song);
     return _enrichSongsWithFavorites(songs);
   }
 }

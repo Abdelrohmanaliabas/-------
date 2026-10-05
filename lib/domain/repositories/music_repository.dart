@@ -24,4 +24,5 @@ abstract class MusicRepository {
   Future<Album?> getAlbumById(String id);
   Future<List<Song>> getSongsByAlbum(String albumId);
   Future<List<Song>> getSongsByGenre(String genreId);
+  Future<List<Song>> getRelatedSongs(Song song);
 }

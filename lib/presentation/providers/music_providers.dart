@@ -3,6 +3,7 @@ import '../../domain/models/artist.dart';
 import '../../domain/models/genre.dart';
 import '../../domain/models/playlist.dart';
 import '../../domain/models/song.dart';
+import '../../data/services/listening_history_service.dart';
 import 'service_providers.dart';
 
 final recentlyPlayedSongsProvider = FutureProvider<List<Song>>((ref) async {
@@ -59,3 +60,19 @@ final songsByGenreProvider = FutureProvider.family<List<Song>, String>((ref, gen
   final repo = ref.watch(musicRepositoryProvider);
   return repo.getSongsByGenre(genreId);
 });
+
+final completedSongsProvider = FutureProvider<List<Song>>((ref) async {
+  final songs = await ListeningHistoryService.getCompletedSongs();
+  return songs;
+});
+
+final relatedToListeningProvider = FutureProvider<List<Song>>((ref) async {
+  final repo = ref.watch(musicRepositoryProvider);
+  final lastPlayed = await ListeningHistoryService.getLastPlayedSong();
+  if (lastPlayed != null) {
+    final related = await repo.getRelatedSongs(lastPlayed);
+    if (related.isNotEmpty) return related;
+  }
+  return repo.getRecommendedSongs();
+});
+

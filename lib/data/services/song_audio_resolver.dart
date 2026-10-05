@@ -132,15 +132,24 @@ class SongAudioResolver {
   }
 
   static String _cleanText(String text) {
-    return text
+    String cleaned = text
         .replaceAll(RegExp(r'[\u064B-\u065F\u0670]'), '') // remove tashkeel
         .replaceAll(
-            RegExp(r'\[.*?\]|\(.*?\)|feat\..*|Official.*|كليب|فيديو كليب|فيديو|أغنية|اغنية',
+            RegExp(r'\[.*?\]|feat\..*|Official.*|كليب|فيديو كليب|فيديو|أغنية|اغنية',
                 caseSensitive: false),
-            '')
-        .replaceAll(RegExp(r'[^\w\s\u0600-\u06FF]'), ' ')
-        .replaceAll(RegExp(r'\s+'), ' ')
-        .trim();
+            '');
+    cleaned = cleaned.replaceAll(
+        RegExp(r'\((?:Official|Audio|Clip|Video|Music|كليب|فيديو|أغنية|اغنية|نسخة|ميكس|ريمكس)[^\)]*\)',
+            caseSensitive: false),
+        '');
+    cleaned = cleaned.replaceAll(RegExp(r'[()\[\]{}]'), ' ');
+    cleaned = cleaned.replaceAll(RegExp(r'[^\w\s\u0600-\u06FF]'), ' ');
+    cleaned = cleaned.replaceAll(RegExp(r'\s+'), ' ').trim();
+
+    if (cleaned.isEmpty) {
+      cleaned = text.replaceAll(RegExp(r'[^\w\s\u0600-\u06FF]'), ' ').trim();
+    }
+    return cleaned.isNotEmpty ? cleaned : text.trim();
   }
 
   /// Resolves the full audio URL and duration for any song.
@@ -198,19 +207,17 @@ class SongAudioResolver {
       }
     }
 
-    // 4. Resolve FULL SONG via SoundCloud (100% full song, 3-5 minutes, no 30-second clips)
-    if (!forceFresh && !isFallback && !song.id.startsWith('yt_')) {
-      final scInfo = await _resolveSoundCloudTrack(cleanTitle, cleanArtist);
-      if (scInfo != null) {
-        _cache[cacheKey] = _CachedStream(
-          url: scInfo.url,
-          duration: scInfo.duration ?? song.duration,
-          cachedAt: DateTime.now(),
-          source: 'soundcloud_full',
-        );
-        debugPrint('☁️ SoundCloud FULL song resolved for "${song.title}" (${scInfo.duration?.inMinutes}:${((scInfo.duration?.inSeconds ?? 0) % 60).toString().padLeft(2, '0')}): ${scInfo.url}');
-        return scInfo;
-      }
+    // 4. Resolve FULL SONG via SoundCloud (100% full song, 3-5 minutes, direct CloudFront MP3)
+    final scInfo = await _resolveSoundCloudTrack(cleanTitle, cleanArtist);
+    if (scInfo != null) {
+      _cache[cacheKey] = _CachedStream(
+        url: scInfo.url,
+        duration: scInfo.duration ?? song.duration,
+        cachedAt: DateTime.now(),
+        source: 'soundcloud_full',
+      );
+      debugPrint('☁️ SoundCloud FULL song resolved for "${song.title}" (${scInfo.duration?.inMinutes}:${((scInfo.duration?.inSeconds ?? 0) % 60).toString().padLeft(2, '0')}): ${scInfo.url}');
+      return scInfo;
     }
 
     // 5. Fast iTunes Search preview fallback (~150ms)

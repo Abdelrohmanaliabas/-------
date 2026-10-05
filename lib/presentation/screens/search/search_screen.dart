@@ -8,6 +8,7 @@ import 'package:mazikty/presentation/widgets/artist_avatar.dart';
 import 'package:mazikty/presentation/widgets/empty_state_view.dart';
 import 'package:mazikty/presentation/widgets/section_header.dart';
 import 'package:mazikty/presentation/widgets/song_tile.dart';
+import 'package:mazikty/presentation/providers/audio_player_provider.dart';
 
 class SearchScreen extends ConsumerStatefulWidget {
   const SearchScreen({super.key});
@@ -269,7 +270,10 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           ...results.songs.map((song) {
             return SongTile(
               song: song,
-              playlist: results.songs,
+              playlist: null,
+              onTap: () {
+                ref.read(audioPlayerProvider.notifier).playSongWithRadio(song);
+              },
             );
           }),
         ],

@@ -27,6 +27,8 @@ class HomeScreen extends ConsumerWidget {
     final genresAsync = ref.watch(genresProvider);
     final artistsAsync = ref.watch(featuredArtistsProvider);
     final playlistsAsync = ref.watch(featuredPlaylistsProvider);
+    final completedAsync = ref.watch(completedSongsProvider);
+    final relatedToListeningAsync = ref.watch(relatedToListeningProvider);
 
     return Scaffold(
       body: SafeArea(
@@ -41,6 +43,8 @@ class HomeScreen extends ConsumerWidget {
             ref.invalidate(genresProvider);
             ref.invalidate(featuredArtistsProvider);
             ref.invalidate(featuredPlaylistsProvider);
+            ref.invalidate(completedSongsProvider);
+            ref.invalidate(relatedToListeningProvider);
           },
           child: CustomScrollView(
             slivers: [
@@ -189,6 +193,68 @@ class HomeScreen extends ConsumerWidget {
                             padding: const EdgeInsets.symmetric(horizontal: 16),
                             itemCount: songs.length,
                             itemBuilder: (context, index) => ContinueListeningCard(song: songs[index]),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+                loading: () => const SliverToBoxAdapter(child: SizedBox.shrink()),
+                error: (error, stack) => const SliverToBoxAdapter(child: SizedBox.shrink()),
+              ),
+
+              // Completed Songs (أغاني استمعت إليها كاملة)
+              completedAsync.when(
+                data: (songs) {
+                  if (songs.isEmpty) return const SliverToBoxAdapter(child: SizedBox.shrink());
+                  return SliverToBoxAdapter(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 12),
+                        const SectionHeader(
+                          title: 'أغاني استمعت إليها كاملة',
+                          subtitle: 'سجل استماعك المكتمل بأعلى جودة',
+                          actionText: null,
+                        ),
+                        SizedBox(
+                          height: 220,
+                          child: ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            itemCount: songs.length,
+                            itemBuilder: (context, index) => SongCard(song: songs[index], playlist: songs),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+                loading: () => const SliverToBoxAdapter(child: SizedBox.shrink()),
+                error: (error, stack) => const SliverToBoxAdapter(child: SizedBox.shrink()),
+              ),
+
+              // Related to Listening (ذات صلة بما تستمع إليه)
+              relatedToListeningAsync.when(
+                data: (songs) {
+                  if (songs.isEmpty) return const SliverToBoxAdapter(child: SizedBox.shrink());
+                  return SliverToBoxAdapter(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 16),
+                        const SectionHeader(
+                          title: 'ذات صلة بما تستمع إليه',
+                          subtitle: 'مختارات مخصصة تناسب ذوقك والمطربين المفضلين لديك',
+                          actionText: null,
+                        ),
+                        SizedBox(
+                          height: 220,
+                          child: ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            itemCount: songs.length,
+                            itemBuilder: (context, index) => SongCard(song: songs[index], playlist: songs),
                           ),
                         ),
                       ],

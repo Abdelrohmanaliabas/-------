@@ -1232,19 +1232,38 @@ class MultiSourceMusicApiService implements MusicApiService {
 
   @override
   Future<List<Song>> getSongsByArtist(String artistId) async {
-    final allSongs = [..._curatedArabicHits, ...SampleMusicData.songs];
-    // Match by artistId first
-    final byId = allSongs.where((s) => s.artistId == artistId).toList();
-    if (byId.isNotEmpty) return byId;
-
-    // Fallback: find the artist name from featured list and search YouTube
     final featuredArtists = await fetchFeaturedArtists();
     final artist = featuredArtists.firstWhere(
       (a) => a.id == artistId,
-      orElse: () => const Artist(id: '', name: '', imageUrl: ''),
+      orElse: () => Artist(id: artistId, name: '', imageUrl: ''),
     );
-    final query = artist.name.isNotEmpty ? artist.name : artistId;
-    return searchSongs(query);
+    final artistName = artist.name.isNotEmpty ? artist.name : artistId;
+    final normArtistName = _normalizeArabic(artistName);
+
+    final allSongs = [..._curatedArabicHits, ...SampleMusicData.songs];
+    final byId = allSongs.where((s) {
+      if (s.artistId == artistId) return true;
+      if (normArtistName.isNotEmpty && _normalizeArabic(s.artist).contains(normArtistName)) return true;
+      if (normArtistName.isNotEmpty && normArtistName.contains(_normalizeArabic(s.artist))) return true;
+      return false;
+    }).toList();
+
+    // If we have plenty of curated hits (at least 6), return them directly
+    if (byId.length >= 6) return byId;
+
+    // Otherwise, search for more songs of this artist and combine with curated hits
+    final searchResults = await searchSongs(artistName);
+    final combined = <Song>[...byId];
+    final seen = byId.map((s) => _normalizeArabic(s.title)).toSet();
+
+    for (final song in searchResults) {
+      final normTitle = _normalizeArabic(song.title);
+      if (seen.add(normTitle)) {
+        combined.add(song);
+      }
+    }
+
+    return combined.isNotEmpty ? combined : byId;
   }
 
   @override
@@ -1267,5 +1286,47 @@ class MultiSourceMusicApiService implements MusicApiService {
       orElse: () => SampleMusicData.genres.first,
     );
     return searchSongs(genre.name);
+  }
+
+  @override
+  Future<List<Song>> getRelatedSongs(Song song) async {
+    final related = <Song>[];
+    final seen = <String>{_normalizeArabic(song.title)};
+
+    // 1. Same artist songs first
+    try {
+      final artistSongs = await getSongsByArtist(song.artistId ?? song.artist);
+      for (final s in artistSongs) {
+        final norm = _normalizeArabic(s.title);
+        if (seen.add(norm)) {
+          related.add(s);
+        }
+      }
+    } catch (_) {}
+
+    // 2. Similar songs by genre or style from Curated Hits
+    final normGenre = _normalizeArabic(song.genre);
+    final allHits = [..._curatedArabicHits, ...SampleMusicData.songs];
+    for (final s in allHits) {
+      if (_normalizeArabic(s.genre).contains(normGenre) ||
+          normGenre.contains(_normalizeArabic(s.genre)) ||
+          _normalizeArabic(s.artist) == _normalizeArabic(song.artist)) {
+        final norm = _normalizeArabic(s.title);
+        if (seen.add(norm)) {
+          related.add(s);
+        }
+      }
+    }
+
+    // 3. Additional popular curated hits to ensure full radio queue
+    for (final s in allHits) {
+      final norm = _normalizeArabic(s.title);
+      if (seen.add(norm)) {
+        related.add(s);
+      }
+      if (related.length >= 15) break;
+    }
+
+    return related;
   }
 }

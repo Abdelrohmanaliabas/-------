@@ -25,6 +25,7 @@ abstract class MusicApiService {
   Future<Album?> getAlbumById(String id);
   Future<List<Song>> getSongsByAlbum(String albumId);
   Future<List<Song>> getSongsByGenre(String genreId);
+  Future<List<Song>> getRelatedSongs(Song song);
 }
 
 /// Mock implementation that simulates network latency and serves demo catalog.
@@ -188,5 +189,11 @@ class MockMusicApiService implements MusicApiService {
       orElse: () => SampleMusicData.genres.first,
     );
     return SampleMusicData.songs.where((s) => s.genre == genre.name).toList();
+  }
+
+  @override
+  Future<List<Song>> getRelatedSongs(Song song) async {
+    await _simulateDelay();
+    return SampleMusicData.songs.where((s) => s.id != song.id).toList();
   }
 }

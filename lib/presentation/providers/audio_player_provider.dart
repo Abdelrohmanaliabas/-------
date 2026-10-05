@@ -64,9 +64,12 @@ class PlayerStateData {
 
 class AudioPlayerNotifier extends StateNotifier<PlayerStateData> {
   final AudioPlayerService _service;
+  final Ref? _ref;
   final List<StreamSubscription> _subscriptions = [];
 
-  AudioPlayerNotifier(this._service) : super(const PlayerStateData()) {
+  AudioPlayerNotifier(this._service, {Ref? ref})
+      : _ref = ref,
+        super(const PlayerStateData()) {
     _initListeners();
   }
 
@@ -134,16 +137,26 @@ class AudioPlayerNotifier extends StateNotifier<PlayerStateData> {
     );
   }
 
-  Future<void> playSong(Song song, {List<Song>? playlist}) async {
+  Future<void> playSong(Song song, {List<Song>? playlist, int? index}) async {
+    if (playlist != null && playlist.isNotEmpty) {
+      final initialIdx = (index != null && index >= 0 && index < playlist.length)
+          ? index
+          : playlist.indexWhere((s) => s.id == song.id);
+      await playPlaylist(playlist, initialIndex: initialIdx >= 0 ? initialIdx : 0);
+      return;
+    }
+
     try {
       state = state.copyWith(
         currentSong: song,
+        currentIndex: 0,
+        queue: [song],
         position: Duration.zero,
         duration: song.duration.inSeconds > 0 ? song.duration : state.duration,
         isBuffering: true,
         errorMessage: null,
       );
-      await _service.playSong(song, playlist: playlist);
+      await _service.playSong(song);
     } catch (e) {
       final msg = e.toString().replaceFirst('Exception: ', '');
       state = state.copyWith(
@@ -154,18 +167,57 @@ class AudioPlayerNotifier extends StateNotifier<PlayerStateData> {
     }
   }
 
-  Future<void> playPlaylist(List<Song> songs, {int initialIndex = 0}) async {
+  /// Plays a single song (e.g. from search) and automatically creates an Auto-Radio
+  /// queue of similar songs and songs by the same artist, so tapping Next plays related songs.
+  Future<void> playSongWithRadio(Song song) async {
     try {
-      if (songs.isEmpty) return;
-      final song = songs[initialIndex];
       state = state.copyWith(
         currentSong: song,
+        currentIndex: 0,
+        queue: [song],
         position: Duration.zero,
         duration: song.duration.inSeconds > 0 ? song.duration : state.duration,
         isBuffering: true,
         errorMessage: null,
       );
-      await _service.playPlaylist(songs, initialIndex: initialIndex);
+      await _service.playPlaylist([song], initialIndex: 0);
+
+      // Asynchronously fetch related songs and populate upcoming queue
+      if (_ref != null) {
+        final repo = _ref.read(musicRepositoryProvider);
+        final related = await repo.getRelatedSongs(song);
+        final cleanRelated = related.where((s) => s.id != song.id).toList();
+        if (cleanRelated.isNotEmpty) {
+          final newQueue = [song, ...cleanRelated];
+          _service.setQueue(newQueue, currentIndex: 0);
+          state = state.copyWith(queue: newQueue, currentIndex: 0);
+        }
+      }
+    } catch (e) {
+      final msg = e.toString().replaceFirst('Exception: ', '');
+      state = state.copyWith(
+        isBuffering: false,
+        isPlaying: false,
+        errorMessage: msg.isNotEmpty ? msg : 'تعذر تشغيل الأغنية',
+      );
+    }
+  }
+
+  Future<void> playPlaylist(List<Song> songs, {int initialIndex = 0}) async {
+    try {
+      if (songs.isEmpty) return;
+      final idx = (initialIndex >= 0 && initialIndex < songs.length) ? initialIndex : 0;
+      final song = songs[idx];
+      state = state.copyWith(
+        currentSong: song,
+        currentIndex: idx,
+        queue: songs,
+        position: Duration.zero,
+        duration: song.duration.inSeconds > 0 ? song.duration : state.duration,
+        isBuffering: true,
+        errorMessage: null,
+      );
+      await _service.playPlaylist(songs, initialIndex: idx);
     } catch (e) {
       state = state.copyWith(
         isBuffering: false,
@@ -192,15 +244,61 @@ class AudioPlayerNotifier extends StateNotifier<PlayerStateData> {
   }
 
   Future<void> next() async {
-    await _service.skipToNext();
+    final q = state.queue.isNotEmpty ? state.queue : _service.queue;
+    if (q.isEmpty) return;
+
+    // If queue only has 1 song (e.g. single track play), fetch related radio tracks on the fly
+    if (q.length == 1 && state.currentSong != null && _ref != null) {
+      try {
+        state = state.copyWith(isBuffering: true);
+        final repo = _ref.read(musicRepositoryProvider);
+        final related = await repo.getRelatedSongs(state.currentSong!);
+        final cleanRelated = related.where((s) => s.id != state.currentSong!.id).toList();
+        if (cleanRelated.isNotEmpty) {
+          final newQueue = [state.currentSong!, ...cleanRelated];
+          _service.setQueue(newQueue, currentIndex: 0);
+          state = state.copyWith(queue: newQueue, currentIndex: 0);
+          await skipToIndex(1);
+          return;
+        }
+      } catch (_) {}
+    }
+
+    final nextIdx = (state.currentIndex >= 0 && state.currentIndex < q.length - 1)
+        ? state.currentIndex + 1
+        : 0;
+    await skipToIndex(nextIdx);
   }
 
   Future<void> previous() async {
-    await _service.skipToPrevious();
+    final q = state.queue.isNotEmpty ? state.queue : _service.queue;
+    if (q.isEmpty) return;
+    if (state.position.inSeconds > 3) {
+      state = state.copyWith(position: Duration.zero);
+      await _service.seek(Duration.zero);
+      return;
+    }
+    final prevIdx = (state.currentIndex > 0 && state.currentIndex < q.length)
+        ? state.currentIndex - 1
+        : (q.length - 1);
+    await skipToIndex(prevIdx);
   }
 
   Future<void> skipToIndex(int index) async {
-    await _service.skipToIndex(index);
+    final q = state.queue.isNotEmpty ? state.queue : _service.queue;
+    if (index >= 0 && index < q.length) {
+      final song = q[index];
+      state = state.copyWith(
+        currentSong: song,
+        currentIndex: index,
+        queue: q,
+        position: Duration.zero,
+        duration: song.duration.inSeconds > 0 ? song.duration : state.duration,
+        isBuffering: true,
+        errorMessage: null,
+      );
+      await _service.skipToIndex(index);
+    }
   }
 
   Future<void> toggleShuffle() async {
@@ -236,5 +334,5 @@ class AudioPlayerNotifier extends StateNotifier<PlayerStateData> {
 final audioPlayerProvider =
     StateNotifierProvider<AudioPlayerNotifier, PlayerStateData>((ref) {
   final service = ref.watch(audioPlayerServiceProvider);
-  return AudioPlayerNotifier(service);
+  return AudioPlayerNotifier(service, ref: ref);
 });
