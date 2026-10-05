@@ -84,7 +84,14 @@ class AudioPlayerService {
 
     _player.playerStateStream.listen((state) {
       if (state.processingState == ProcessingState.completed) {
-        // Just_audio handles loop/next according to playlist source
+        if (_player.loopMode == LoopMode.one) {
+          _player.seek(Duration.zero);
+          _player.play();
+        } else if (_currentIndex < _queue.length - 1) {
+          skipToNext();
+        } else if (_player.loopMode == LoopMode.all && _queue.isNotEmpty) {
+          skipToIndex(0);
+        }
       }
     });
   }
@@ -110,8 +117,13 @@ class AudioPlayerService {
     } catch (_) {}
 
     // 3. Resolve authentic audio stream (guarantees real Arabic song audio)
-    final resolvedUrl = await SongAudioResolver.resolveAudioStream(song);
-    final enrichedSong = song.copyWith(audioUrl: resolvedUrl);
+    final resolvedAudio = await SongAudioResolver.resolveAudio(song);
+    final enrichedSong = song.copyWith(
+      audioUrl: resolvedAudio.url,
+      duration: (resolvedAudio.duration != null && resolvedAudio.duration!.inSeconds > 0)
+          ? resolvedAudio.duration!
+          : song.duration,
+    );
 
     // Update queue element if present so player slider & UI gets real stream
     final qIndex = _queue.indexWhere((s) => s.id == song.id);
@@ -122,8 +134,16 @@ class AudioPlayerService {
       }
     }
 
+    Map<String, String>? headers;
+    if (resolvedAudio.url.contains('googlevideo.com')) {
+      headers = {
+        'User-Agent': 'com.google.android.youtube/19.05.36 (Linux; U; Android 14; US) gzip',
+      };
+    }
+
     return AudioSource.uri(
-      Uri.parse(resolvedUrl),
+      Uri.parse(resolvedAudio.url),
+      headers: headers,
       tag: _buildMediaItem(enrichedSong),
     );
   }
@@ -143,6 +163,30 @@ class AudioPlayerService {
     );
   }
 
+  Future<void> _loadAndPlayCurrentSong() async {
+    if (_currentIndex < 0 || _currentIndex >= _queue.length) return;
+    final song = _queue[_currentIndex];
+    _currentSongController.add(song);
+
+    try {
+      final source = await _createAudioSource(song);
+      await _player.setAudioSource(source, initialPosition: Duration.zero);
+      await _player.play();
+
+      // Preload next track quietly in background so next click is instant
+      _preloadNextSong();
+    } catch (e) {
+      debugPrint('Error playing song "${song.title}": $e');
+    }
+  }
+
+  void _preloadNextSong() {
+    if (_currentIndex + 1 < _queue.length) {
+      final nextSong = _queue[_currentIndex + 1];
+      unawaited(SongAudioResolver.resolveAudio(nextSong).then((_) {}, onError: (_) {}));
+    }
+  }
+
   Future<void> playSong(Song song, {List<Song>? playlist}) async {
     final list = (playlist != null && playlist.isNotEmpty) ? playlist : [song];
     final index = list.indexWhere((s) => s.id == song.id);
@@ -155,20 +199,8 @@ class AudioPlayerService {
     _queue = List.from(songs);
     _currentIndex = (initialIndex >= 0 && initialIndex < songs.length) ? initialIndex : 0;
     _queueController.add(_queue);
-    _currentSongController.add(_queue[_currentIndex]);
 
-    try {
-      final audioSources = await Future.wait(_queue.map(_createAudioSource));
-      await _player.setAudioSources(
-        audioSources,
-        initialIndex: _currentIndex,
-        initialPosition: Duration.zero,
-      );
-      await _player.play();
-    } catch (e) {
-      debugPrint('Error loading audio: $e');
-      rethrow;
-    }
+    await _loadAndPlayCurrentSong();
   }
 
   Future<void> play() async {
@@ -192,12 +224,13 @@ class AudioPlayerService {
   }
 
   Future<void> skipToNext() async {
-    if (_player.hasNext) {
-      await _player.seekToNext();
-    } else if (_queue.isNotEmpty && _currentIndex < _queue.length - 1) {
+    if (_queue.isEmpty) return;
+    if (_currentIndex < _queue.length - 1) {
       _currentIndex++;
-      _currentSongController.add(_queue[_currentIndex]);
-      await _player.seek(Duration.zero, index: _currentIndex);
+      await _loadAndPlayCurrentSong();
+    } else if (_player.loopMode == LoopMode.all) {
+      _currentIndex = 0;
+      await _loadAndPlayCurrentSong();
     }
   }
 
@@ -206,24 +239,16 @@ class AudioPlayerService {
       await _player.seek(Duration.zero);
       return;
     }
-
-    if (_player.hasPrevious) {
-      await _player.seekToPrevious();
-    } else if (_queue.isNotEmpty && _currentIndex > 0) {
+    if (_currentIndex > 0) {
       _currentIndex--;
-      _currentSongController.add(_queue[_currentIndex]);
-      await _player.seek(Duration.zero, index: _currentIndex);
+      await _loadAndPlayCurrentSong();
     }
   }
 
   Future<void> skipToIndex(int index) async {
     if (index >= 0 && index < _queue.length) {
       _currentIndex = index;
-      _currentSongController.add(_queue[_currentIndex]);
-      await _player.seek(Duration.zero, index: index);
-      if (!_player.playing) {
-        await _player.play();
-      }
+      await _loadAndPlayCurrentSong();
     }
   }
 

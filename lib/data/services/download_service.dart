@@ -71,8 +71,11 @@ class DownloadService {
       _downloadProgress[song.id] = 0.05;
       _progressController.add(_downloadProgress);
 
-      final downloadUrl = await SongAudioResolver.resolveAudioStream(song);
-      final songDuration = song.duration;
+      final resolvedAudio = await SongAudioResolver.resolveAudio(song);
+      final downloadUrl = resolvedAudio.url;
+      final songDuration = (resolvedAudio.duration != null && resolvedAudio.duration!.inSeconds > 0)
+          ? resolvedAudio.duration!
+          : song.duration;
 
       final dir = await _getDownloadsDirectory();
       // Clean filename
@@ -82,6 +85,9 @@ class DownloadService {
 
       final client = http.Client();
       final request = http.Request('GET', Uri.parse(downloadUrl));
+      if (downloadUrl.contains('googlevideo.com')) {
+        request.headers['User-Agent'] = 'com.google.android.youtube/19.05.36 (Linux; U; Android 14; US) gzip';
+      }
       final response = await client.send(request);
 
       if (response.statusCode != 200) {

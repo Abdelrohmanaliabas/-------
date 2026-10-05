@@ -9,7 +9,14 @@ void main() {
     expect(results.isNotEmpty, isTrue);
     final firstSong = results.first;
     expect(firstSong.title, contains('عود البطل'));
-    expect(firstSong.audioUrl.isNotEmpty, isTrue);
     expect(firstSong.artworkUrl.isNotEmpty, isTrue);
+  });
+
+  test('Search for سعد الصغير returns full-length songs from YouTube and multi-sources', () async {
+    final service = MultiSourceMusicApiService();
+    final results = await service.searchSongs('سعد الصغير');
+
+    expect(results.isNotEmpty, isTrue);
+    expect(results.any((s) => s.id.startsWith('yt_') || s.duration.inMinutes >= 2), isTrue);
   });
 }

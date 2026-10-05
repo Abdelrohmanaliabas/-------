@@ -8,6 +8,7 @@ import '../../domain/models/playlist.dart';
 import '../../domain/models/genre.dart';
 import '../mock/sample_music_data.dart';
 import 'music_api_service.dart';
+import 'song_audio_resolver.dart';
 
 /// Comprehensive multi-source music aggregator querying 15+ music APIs & engines
 /// with intelligent Arabic normalization, transliteration, deduplication, and streaming audio.
@@ -510,6 +511,64 @@ class MultiSourceMusicApiService implements MusicApiService {
 
 
   // -------------------------------------------------------------
+  // API: YouTube & YouTube Music Search Engine (100% Full Audio)
+  // -------------------------------------------------------------
+  Future<List<Song>> _searchYouTube(String query) async {
+    try {
+      final yt = SongAudioResolver.yt;
+      final searchResults = await yt.search.search(query).timeout(_apiTimeout);
+      final songs = <Song>[];
+
+      for (final v in searchResults.take(15)) {
+        final dur = v.duration;
+        if (dur != null && dur.inSeconds >= 45 && dur.inMinutes <= 25) {
+          final fullTitle = v.title;
+          String songTitle = fullTitle;
+          String songArtist = v.author;
+
+          if (fullTitle.contains(' - ')) {
+            final parts = fullTitle.split(' - ');
+            if (parts.length >= 2) {
+              songArtist = parts[0].replaceAll(RegExp(r'[@#]'), '').trim();
+              songTitle = parts.sublist(1).join(' - ').trim();
+            }
+          } else if (fullTitle.contains(' | ')) {
+            final parts = fullTitle.split(' | ');
+            if (parts.length >= 2) {
+              songTitle = parts[0].trim();
+              songArtist = parts[1].trim();
+            }
+          }
+
+          songTitle = songTitle
+              .replaceAll(RegExp(r'\[.*?\]|\(.*?\)|Official.*|كليب|فيديو كليب|فيديو|أغنية|اغنية', caseSensitive: false), '')
+              .trim();
+          if (songTitle.isEmpty) songTitle = v.title;
+
+          songs.add(Song(
+            id: 'yt_${v.id.value}',
+            title: songTitle,
+            artist: songArtist,
+            album: 'YouTube Music',
+            artworkUrl: v.thumbnails.highResUrl.isNotEmpty
+                ? v.thumbnails.highResUrl
+                : (v.thumbnails.mediumResUrl.isNotEmpty
+                    ? v.thumbnails.mediumResUrl
+                    : 'https://img.youtube.com/vi/${v.id.value}/hqdefault.jpg'),
+            audioUrl: '', // Fast-resolved by ID on tap
+            duration: dur,
+            genre: 'موسيقى كاملة',
+            releaseYear: v.uploadDate?.year.toString(),
+          ));
+        }
+      }
+      return songs;
+    } catch (_) {
+      return [];
+    }
+  }
+
+  // -------------------------------------------------------------
   // Search Deduplication & Ranking Algorithm
   // -------------------------------------------------------------
   List<Song> _deduplicateAndRank(List<Song> songs, String userQuery) {
@@ -525,6 +584,14 @@ class MultiSourceMusicApiService implements MusicApiService {
       if (!seen.contains(key) && normTitle.isNotEmpty) {
         seen.add(key);
         uniqueSongs.add(s);
+      } else if (s.id.startsWith('yt_')) {
+        // Prefer YouTube versions because they guarantee the full song and duration
+        final existingIdx = uniqueSongs.indexWhere((existing) =>
+            _normalizeArabic(existing.title) == normTitle &&
+            _normalizeArabic(existing.artist) == normArtist);
+        if (existingIdx != -1 && !uniqueSongs[existingIdx].id.startsWith('yt_')) {
+          uniqueSongs[existingIdx] = s;
+        }
       }
     }
 
@@ -582,6 +649,11 @@ class MultiSourceMusicApiService implements MusicApiService {
     // 2. Query 15+ API endpoints in parallel with variations
     final futures = <Future<List<Song>>>[];
 
+    // Source 0: YouTube & YouTube Music (Guaranteed full songs!)
+    futures.add(_searchYouTube(q));
+    if (variations.length > 1) {
+      futures.add(_searchYouTube(variations[1]));
+    }
 
     // Source 1: Deezer with raw query
     futures.add(_searchDeezer(q));
