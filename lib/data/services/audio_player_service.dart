@@ -6,7 +6,6 @@ import 'package:just_audio/just_audio.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 import '../../domain/models/song.dart';
 import 'download_service.dart';
-import 'full_audio_resolver.dart';
 
 class AudioPlayerService {
   final AudioPlayer _player = AudioPlayer();
@@ -109,42 +108,10 @@ class AudioPlayerService {
       }
     } catch (_) {}
 
-    // 3. Resolve Full Audio Stream (for 100% complete song duration)
-    var finalAudioUrl = song.audioUrl;
-    var finalDuration = song.duration;
-
-    if (song.duration.inSeconds <= 45 ||
-        song.audioUrl.contains('preview') ||
-        song.audioUrl.contains('soundhelix') ||
-        song.audioUrl.contains('youtube.com')) {
-      try {
-        final resolved = await FullAudioResolver.resolveFullAudioStream(song.title, song.artist);
-        if (resolved != null) {
-          finalAudioUrl = resolved.url;
-          finalDuration = resolved.duration;
-        }
-      } catch (e) {
-        debugPrint('Could not resolve full audio stream: $e');
-      }
-    }
-
-    final enrichedSong = song.copyWith(
-      audioUrl: finalAudioUrl,
-      duration: finalDuration,
-    );
-
-    // Update queue element if present so player slider & UI gets real full duration
-    final qIndex = _queue.indexWhere((s) => s.id == song.id);
-    if (qIndex != -1) {
-      _queue[qIndex] = enrichedSong;
-      if (_currentIndex == qIndex) {
-        _currentSongController.add(enrichedSong);
-      }
-    }
-
+    // 3. Fallback to HTTPS streaming
     return AudioSource.uri(
-      Uri.parse(finalAudioUrl),
-      tag: _buildMediaItem(enrichedSong),
+      Uri.parse(song.audioUrl),
+      tag: _buildMediaItem(song),
     );
   }
 

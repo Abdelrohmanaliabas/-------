@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:youtube_explode_dart/youtube_explode_dart.dart' hide Playlist;
 import '../../domain/models/song.dart';
 import '../../domain/models/artist.dart';
 import '../../domain/models/album.dart';
@@ -93,8 +92,8 @@ class MultiSourceMusicApiService implements MusicApiService {
       artist: 'حسن شاكوش وعمر كمال',
       album: 'مهرجانات شعبية',
       artworkUrl: 'https://cdn-images.dzcdn.net/images/cover/f9df9cff5fd0e3799ae2ba0cd8235f05/500x500-000000-80-0-0.jpg',
-      audioUrl: 'https://cdnt-preview.dzcdn.net/api/1/1/2/9/5/0/29501f8c7f30d9b78d44a7302243ef5e.mp3',
-      duration: Duration(minutes: 3, seconds: 24),
+      audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3',
+      duration: Duration(minutes: 6, seconds: 12),
       genre: 'مهرجانات',
       playsCount: 24800000,
       releaseYear: '2020',
@@ -105,8 +104,8 @@ class MultiSourceMusicApiService implements MusicApiService {
       artist: 'حسن شاكوش وعمر كمال',
       album: 'مهرجانات 2020',
       artworkUrl: 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600&auto=format&fit=crop&q=80',
-      audioUrl: 'https://cdnt-preview.dzcdn.net/api/1/1/2/9/5/0/29501f8c7f30d9b78d44a7302243ef5e.mp3',
-      duration: Duration(minutes: 3, seconds: 15),
+      audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3',
+      duration: Duration(minutes: 7, seconds: 5),
       genre: 'مهرجانات',
       playsCount: 31000000,
       releaseYear: '2020',
@@ -117,8 +116,8 @@ class MultiSourceMusicApiService implements MusicApiService {
       artist: 'كريم محمود عبد العزيز ومحمد أسامة',
       album: 'فيلم من أجل زيكو',
       artworkUrl: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=600&auto=format&fit=crop&q=80',
-      audioUrl: 'https://cdnt-preview.dzcdn.net/api/1/1/2/8/2/0/282a308518c2ae3c591be991c3d14f65.mp3',
-      duration: Duration(minutes: 3, seconds: 12),
+      audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3',
+      duration: Duration(minutes: 5, seconds: 44),
       genre: 'شعبي مودرن',
       playsCount: 19500000,
       releaseYear: '2022',
@@ -129,8 +128,8 @@ class MultiSourceMusicApiService implements MusicApiService {
       artist: 'عبد الباسط حمودة ومحمود الليثي',
       album: 'فيلم بعد الشر',
       artworkUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&auto=format&fit=crop&q=80',
-      audioUrl: 'https://cdnt-preview.dzcdn.net/api/1/1/2/8/2/0/282a308518c2ae3c591be991c3d14f65.mp3',
-      duration: Duration(minutes: 3, seconds: 40),
+      audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3',
+      duration: Duration(minutes: 5, seconds: 2),
       genre: 'شعبي',
       playsCount: 15400000,
       releaseYear: '2023',
@@ -141,8 +140,8 @@ class MultiSourceMusicApiService implements MusicApiService {
       artist: 'عمرو دياب',
       album: 'تملي معاك',
       artworkUrl: 'https://images.unsplash.com/photo-1518609878373-06d740f60d8b?w=600&auto=format&fit=crop&q=80',
-      audioUrl: 'https://cdns-preview-d.dzcdn.net/stream/c-deda72c616d8e43f5da0fd604ea385e3-7.mp3',
-      duration: Duration(minutes: 4, seconds: 30),
+      audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3',
+      duration: Duration(minutes: 5, seconds: 53),
       genre: 'بوب عربي',
       playsCount: 45000000,
       releaseYear: '2000',
@@ -153,8 +152,8 @@ class MultiSourceMusicApiService implements MusicApiService {
       artist: 'شيرين عبد الوهاب',
       album: 'مسلسل حكاية حياة',
       artworkUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=600&auto=format&fit=crop&q=80',
-      audioUrl: 'https://cdns-preview-d.dzcdn.net/stream/c-deda72c616d8e43f5da0fd604ea385e3-7.mp3',
-      duration: Duration(minutes: 4, seconds: 12),
+      audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3',
+      duration: Duration(minutes: 4, seconds: 38),
       genre: 'طرب رومانسي',
       playsCount: 28900000,
       releaseYear: '2013',
@@ -165,8 +164,8 @@ class MultiSourceMusicApiService implements MusicApiService {
       artist: 'أحمد سعد',
       album: 'وسع وسع - سينجل',
       artworkUrl: 'https://images.unsplash.com/photo-1508700115892-45ecd05ae2ad?w=600&auto=format&fit=crop&q=80',
-      audioUrl: 'https://cdnt-preview.dzcdn.net/api/1/1/2/8/2/0/282a308518c2ae3c591be991c3d14f65.mp3',
-      duration: Duration(minutes: 3, seconds: 18),
+      audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-7.mp3',
+      duration: Duration(minutes: 6, seconds: 35),
       genre: 'بوب شعبي',
       playsCount: 22000000,
       releaseYear: '2022',
@@ -177,8 +176,8 @@ class MultiSourceMusicApiService implements MusicApiService {
       artist: 'ويجز',
       album: 'البخت - سينجل',
       artworkUrl: 'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=600&auto=format&fit=crop&q=80',
-      audioUrl: 'https://cdnt-preview.dzcdn.net/api/1/1/2/9/5/0/29501f8c7f30d9b78d44a7302243ef5e.mp3',
-      duration: Duration(minutes: 3, seconds: 50),
+      audioUrl: 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-8.mp3',
+      duration: Duration(minutes: 5, seconds: 19),
       genre: 'تراب عربي',
       playsCount: 35000000,
       releaseYear: '2022',
@@ -509,45 +508,6 @@ class MultiSourceMusicApiService implements MusicApiService {
     }
   }
 
-  // -------------------------------------------------------------
-  // API 13: YouTube Explode Full-Length Audio Search
-  // -------------------------------------------------------------
-  Future<List<Song>> _searchYouTubeTracks(String query) async {
-    try {
-      final yt = YoutubeExplode();
-      try {
-        final searchResult = await yt.search.search(query).timeout(const Duration(seconds: 4));
-        final songs = <Song>[];
-        for (final video in searchResult.take(8)) {
-          final dur = video.duration ?? Duration.zero;
-          if (dur.inSeconds >= 45 && dur.inHours < 1) {
-            final title = video.title
-                .replaceAll(RegExp(r'\[.*?\]|\(.*?\)|Official Video|Official Audio|فيديو كليب|كليب|حصريا|جديد', caseSensitive: false), '')
-                .trim();
-            final artist = video.author.replaceAll(' - Topic', '').trim();
-            final artwork = video.thumbnails.highResUrl;
-
-            songs.add(Song(
-              id: 'yt_${video.id.value}',
-              title: title.isNotEmpty ? title : video.title,
-              artist: artist,
-              album: 'تسجيل كامل',
-              artworkUrl: artwork.isNotEmpty ? artwork : 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600',
-              audioUrl: 'https://youtube.com/watch?v=${video.id.value}',
-              duration: dur,
-              genre: 'موسيقى عربية',
-              playsCount: video.engagement.viewCount,
-            ));
-          }
-        }
-        return songs;
-      } finally {
-        yt.close();
-      }
-    } catch (_) {
-      return [];
-    }
-  }
 
   // -------------------------------------------------------------
   // Search Deduplication & Ranking Algorithm
@@ -622,11 +582,6 @@ class MultiSourceMusicApiService implements MusicApiService {
     // 2. Query 15+ API endpoints in parallel with variations
     final futures = <Future<List<Song>>>[];
 
-    // Source 0: YouTube Explode Full Tracks Search
-    futures.add(_searchYouTubeTracks(q));
-    if (variations.length > 1) {
-      futures.add(_searchYouTubeTracks(variations[1]));
-    }
 
     // Source 1: Deezer with raw query
     futures.add(_searchDeezer(q));

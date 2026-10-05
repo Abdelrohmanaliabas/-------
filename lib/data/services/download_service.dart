@@ -7,7 +7,6 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/utils/app_exceptions.dart';
 import '../../domain/models/song.dart';
-import 'full_audio_resolver.dart';
 
 class DownloadService {
   static const String _downloadKey = 'mazikty_downloaded_songs';
@@ -71,22 +70,8 @@ class DownloadService {
       _downloadProgress[song.id] = 0.05;
       _progressController.add(_downloadProgress);
 
-      var downloadUrl = song.audioUrl;
-      var songDuration = song.duration;
-
-      // Resolve full stream if this is a short preview
-      if (song.duration.inSeconds <= 45 ||
-          song.audioUrl.contains('preview') ||
-          song.audioUrl.contains('soundhelix') ||
-          song.audioUrl.contains('youtube.com')) {
-        try {
-          final resolved = await FullAudioResolver.resolveFullAudioStream(song.title, song.artist);
-          if (resolved != null) {
-            downloadUrl = resolved.url;
-            songDuration = resolved.duration;
-          }
-        } catch (_) {}
-      }
+      final downloadUrl = song.audioUrl;
+      final songDuration = song.duration;
 
       final dir = await _getDownloadsDirectory();
       // Clean filename
