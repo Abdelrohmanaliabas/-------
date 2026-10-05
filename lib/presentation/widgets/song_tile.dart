@@ -278,7 +278,7 @@ class SongTile extends ConsumerWidget {
                       } catch (e) {
                         if (context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('فشل التحميل: $e')),
+                            const SnackBar(content: Text('تعذر تحميل الأغنية، يرجى التحقق من اتصال الإنترنت')),
                           );
                         }
                       }

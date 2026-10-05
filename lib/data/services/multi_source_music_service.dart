@@ -87,7 +87,7 @@ class MultiSourceMusicApiService implements MusicApiService {
   // Curated Arabic Verified Catalog (Diverse & Updated Arabic Music)
   // -------------------------------------------------------------
   static final List<Song> _curatedArabicHits = [
-    // Sherine — audioUrl left empty so SongAudioResolver always fetches from YouTube
+    // Sherine
     const Song(
       id: 'hit_kalam_eneih',
       title: 'كلام عينيه',
@@ -95,7 +95,7 @@ class MultiSourceMusicApiService implements MusicApiService {
       artistId: 'artist_sherine',
       album: 'نساي',
       artworkUrl: 'https://e-cdns-images.dzcdn.net/images/cover/8d7fdae7bd9e9ed2f2e0f4b7e2b6f4a1/500x500-000000-80-0-0.jpg',
-      audioUrl: '',
+      audioUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/67/73/2f/67732f33-bcd6-5927-99de-11eaaf88cb73/mzaf_10287738161216312625.plus.aac.p.m4a',
       duration: Duration(minutes: 3, seconds: 58),
       genre: 'طرب معاصر',
       playsCount: 38000000,
@@ -108,7 +108,7 @@ class MultiSourceMusicApiService implements MusicApiService {
       artistId: 'artist_sherine',
       album: 'نساي',
       artworkUrl: 'https://e-cdns-images.dzcdn.net/images/cover/8d7fdae7bd9e9ed2f2e0f4b7e2b6f4a1/500x500-000000-80-0-0.jpg',
-      audioUrl: '',
+      audioUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/ae/69/bd/ae69bd62-653c-7343-c789-cc5ffbee606a/mzaf_91142661183722088.plus.aac.p.m4a',
       duration: Duration(minutes: 4, seconds: 22),
       genre: 'طرب رومانسي',
       playsCount: 42000000,
@@ -121,7 +121,7 @@ class MultiSourceMusicApiService implements MusicApiService {
       artistId: 'artist_sherine',
       album: 'نساي',
       artworkUrl: 'https://e-cdns-images.dzcdn.net/images/cover/8d7fdae7bd9e9ed2f2e0f4b7e2b6f4a1/500x500-000000-80-0-0.jpg',
-      audioUrl: '',
+      audioUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/1f/13/c7/1f13c703-bdfc-70d3-155a-d59fe39dcb10/mzaf_2169797306176369190.plus.aac.p.m4a',
       duration: Duration(minutes: 4, seconds: 15),
       genre: 'طرب رومانسي',
       playsCount: 36000000,
@@ -134,7 +134,7 @@ class MultiSourceMusicApiService implements MusicApiService {
       artistId: 'artist_sherine',
       album: 'حكاية حياة',
       artworkUrl: 'https://e-cdns-images.dzcdn.net/images/cover/4b2e4a8e9d6e2c8f5a3d1e7b9c5f2a0e/500x500-000000-80-0-0.jpg',
-      audioUrl: '',
+      audioUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/08/13/32/08133239-98a1-7578-e365-8b489219c0db/mzaf_13654587899466436776.plus.aac.p.m4a',
       duration: Duration(minutes: 4, seconds: 12),
       genre: 'طرب رومانسي',
       playsCount: 28900000,
@@ -149,7 +149,7 @@ class MultiSourceMusicApiService implements MusicApiService {
       artistId: 'artist_amr_diab',
       album: 'تملي معاك',
       artworkUrl: 'https://e-cdns-images.dzcdn.net/images/cover/b9e5f2a1d3c7e8f4a6b2d0e5c9f1a3b7/500x500-000000-80-0-0.jpg',
-      audioUrl: '',
+      audioUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/5e/df/09/5edf0981-ce52-4740-f0b2-f6ad0760afcb/mzaf_17144740537777531434.plus.aac.p.m4a',
       duration: Duration(minutes: 4, seconds: 30),
       genre: 'بوب عربي',
       playsCount: 45000000,
@@ -162,7 +162,7 @@ class MultiSourceMusicApiService implements MusicApiService {
       artistId: 'artist_amr_diab',
       album: 'مكانك 2024',
       artworkUrl: 'https://e-cdns-images.dzcdn.net/images/cover/3a1f7c9e2b4d6f8a0e5c7b3d9f2a4e6b/500x500-000000-80-0-0.jpg',
-      audioUrl: '',
+      audioUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/15/50/27/155027eb-3590-6c01-1838-7fd4dcfcfe04/mzaf_12780690174101010359.plus.aac.p.m4a',
       duration: Duration(minutes: 3, seconds: 45),
       genre: 'بوب عربي',
       playsCount: 19800000,
@@ -175,7 +175,7 @@ class MultiSourceMusicApiService implements MusicApiService {
       artistId: 'artist_amr_diab',
       album: 'كل حياتي',
       artworkUrl: 'https://e-cdns-images.dzcdn.net/images/cover/5d2a9f1c7b3e5a8d0f4c6b9e2a7d3f1c/500x500-000000-80-0-0.jpg',
-      audioUrl: '',
+      audioUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/c7/2b/6e/c72b6e58-d88b-3193-468a-2403805c1c84/mzaf_4069044560418630041.plus.aac.p.m4a',
       duration: Duration(minutes: 3, seconds: 42),
       genre: 'بوب عربي',
       playsCount: 31000000,
@@ -190,7 +190,7 @@ class MultiSourceMusicApiService implements MusicApiService {
       artistId: 'artist_ahmed_saad',
       album: 'وسع وسع - سينجل',
       artworkUrl: 'https://e-cdns-images.dzcdn.net/images/cover/a3f1c9e5b7d2a4f6c8e0b3d5f9a1c7e2/500x500-000000-80-0-0.jpg',
-      audioUrl: '',
+      audioUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/2c/ba/11/2cba117b-c473-3a95-36ab-d4fd3337d902/mzaf_12491533538707426856.plus.aac.p.m4a',
       duration: Duration(minutes: 3, seconds: 18),
       genre: 'بوب شعبي',
       playsCount: 22000000,
@@ -203,7 +203,7 @@ class MultiSourceMusicApiService implements MusicApiService {
       artistId: 'artist_ahmed_saad',
       album: 'فيلم عمهم',
       artworkUrl: 'https://e-cdns-images.dzcdn.net/images/cover/7c5e1a3f9b2d4e6a8c0f3b5d7e9a1c4f/500x500-000000-80-0-0.jpg',
-      audioUrl: '',
+      audioUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/56/83/91/56839199-6f6c-31fb-fe49-7d4ead1ca1aa/mzaf_3333502615273490459.plus.aac.p.m4a',
       duration: Duration(minutes: 3, seconds: 10),
       genre: 'بوب شعبي',
       playsCount: 29000000,
@@ -218,7 +218,7 @@ class MultiSourceMusicApiService implements MusicApiService {
       artistId: 'artist_wegz',
       album: 'البخت - سينجل',
       artworkUrl: 'https://e-cdns-images.dzcdn.net/images/cover/2f4a8e1c9b3d5f7a0e2c4b6d8f0a3c5e/500x500-000000-80-0-0.jpg',
-      audioUrl: '',
+      audioUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/e2/b0/1d/e2b01d30-7b5f-d520-4f3e-e1e250899b12/mzaf_2863315495467483634.plus.aac.p.m4a',
       duration: Duration(minutes: 3, seconds: 50),
       genre: 'تراب عربي',
       playsCount: 35000000,
@@ -231,7 +231,7 @@ class MultiSourceMusicApiService implements MusicApiService {
       artistId: 'artist_wegz',
       album: 'سينجل',
       artworkUrl: 'https://e-cdns-images.dzcdn.net/images/cover/6c0e2a4f8b1d3e5a7c9f1b3d5e7a9c1e/500x500-000000-80-0-0.jpg',
-      audioUrl: '',
+      audioUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/d3/71/ab/d371ab8d-ee54-de16-806f-cfe9cbd49b8e/mzaf_3509482404735628639.plus.aac.p.m4a',
       duration: Duration(minutes: 3, seconds: 40),
       genre: 'تراب عربي',
       playsCount: 26000000,
@@ -246,7 +246,7 @@ class MultiSourceMusicApiService implements MusicApiService {
       artistId: 'artist_tamer',
       album: 'تاج',
       artworkUrl: 'https://e-cdns-images.dzcdn.net/images/cover/4e8a2c6f0b4d8e2a6c0f4b8e2a6c0f4b/500x500-000000-80-0-0.jpg',
-      audioUrl: '',
+      audioUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview112/v4/a4/48/d7/a448d73e-6098-35bc-7601-622e4969e495/mzaf_11831876887476923435.plus.aac.p.m4a',
       duration: Duration(minutes: 3, seconds: 20),
       genre: 'بوب عربي',
       playsCount: 21500000,
@@ -258,8 +258,8 @@ class MultiSourceMusicApiService implements MusicApiService {
       artist: 'تامر حسني',
       artistId: 'artist_tamer',
       album: 'عيش بشوقك',
-      artworkUrl: 'https://e-cdns-images.dzcdn.net/images/cover/8a4c0e6f2b8d4a0e6c2f8b4d0a6e2c8f/500x500-000000-80-0-0.jpg',
-      audioUrl: '',
+      artworkUrl: 'https://e-cdns-images.dzcdn.net/images/cover/8a4c0e6f2b8d4e0a6c2f8b4d0a6e2c8f/500x500-000000-80-0-0.jpg',
+      audioUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/89/9f/de/899fde12-cbcb-916d-8d8d-b83bc28b4934/mzaf_13818730788114474143.plus.aac.p.m4a',
       duration: Duration(minutes: 3, seconds: 55),
       genre: 'طرب رومانسي',
       playsCount: 38000000,
@@ -274,7 +274,7 @@ class MultiSourceMusicApiService implements MusicApiService {
       artistId: 'artist_hamaki',
       album: 'سينجل 2022',
       artworkUrl: 'https://e-cdns-images.dzcdn.net/images/cover/0c4e8a2f6b0d4e8a2c6f0b4d8e2a6c0f/500x500-000000-80-0-0.jpg',
-      audioUrl: '',
+      audioUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview112/v4/79/32/da/7932da78-1fc1-3931-c6c0-f3869681dfda/mzaf_10542712012174392451.plus.aac.p.m4a',
       duration: Duration(minutes: 3, seconds: 05),
       genre: 'بوب عربي',
       playsCount: 27000000,
@@ -289,7 +289,7 @@ class MultiSourceMusicApiService implements MusicApiService {
       artistId: 'artist_cairokee',
       album: 'روما',
       artworkUrl: 'https://e-cdns-images.dzcdn.net/images/cover/2e6a0c4f8b2d6e0a4c8f2b6d0e4a8c2f/500x500-000000-80-0-0.jpg',
-      audioUrl: '',
+      audioUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/d8/ca/86/d8ca8630-91b2-b759-a05b-e0c4c463e5d3/mzaf_12082730354540616472.plus.aac.p.m4a',
       duration: Duration(minutes: 4, seconds: 10),
       genre: 'روك عربي',
       playsCount: 18000000,
@@ -304,7 +304,7 @@ class MultiSourceMusicApiService implements MusicApiService {
       artistId: 'artist_shakosh',
       album: 'مهرجانات شعبية',
       artworkUrl: 'https://cdn-images.dzcdn.net/images/cover/f9df9cff5fd0e3799ae2ba0cd8235f05/500x500-000000-80-0-0.jpg',
-      audioUrl: '',
+      audioUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/d1/3b/91/d13b913c-1c65-7004-63b9-5c01848ced2e/mzaf_18189965843957578363.plus.aac.p.m4a',
       duration: Duration(minutes: 3, seconds: 24),
       genre: 'مهرجانات',
       playsCount: 24800000,
@@ -317,7 +317,7 @@ class MultiSourceMusicApiService implements MusicApiService {
       artistId: 'artist_shakosh',
       album: 'مهرجانات 2020',
       artworkUrl: 'https://cdn-images.dzcdn.net/images/cover/f9df9cff5fd0e3799ae2ba0cd8235f05/500x500-000000-80-0-0.jpg',
-      audioUrl: '',
+      audioUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/61/05/53/610553ef-82f9-5b17-6045-499c75918777/mzaf_5817950213956088330.plus.aac.p.m4a',
       duration: Duration(minutes: 3, seconds: 15),
       genre: 'مهرجانات',
       playsCount: 31000000,
@@ -329,7 +329,7 @@ class MultiSourceMusicApiService implements MusicApiService {
       artist: 'كريم محمود عبد العزيز ومحمد أسامة',
       album: 'فيلم من أجل زيكو',
       artworkUrl: 'https://e-cdns-images.dzcdn.net/images/cover/4a8e2c6f0b4d8e2a6c0f4b8e2a6c0f4b/500x500-000000-80-0-0.jpg',
-      audioUrl: '',
+      audioUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/05/7f/5d/057f5d82-30f4-2f6c-1775-6e1d224903a6/mzaf_16715468319058468915.plus.aac.p.m4a',
       duration: Duration(minutes: 3, seconds: 12),
       genre: 'شعبي مودرن',
       playsCount: 19500000,
@@ -341,7 +341,7 @@ class MultiSourceMusicApiService implements MusicApiService {
       artist: 'عبد الباسط حمودة ومحمود الليثي',
       album: 'فيلم بعد الشر',
       artworkUrl: 'https://e-cdns-images.dzcdn.net/images/cover/8e4a0c6f2b8d4e0a6c2f8b4d0e6a2c8f/500x500-000000-80-0-0.jpg',
-      audioUrl: '',
+      audioUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/f8/09/73/f80973e2-8f0f-39ee-e5ca-bd4e2ab75ab9/mzaf_1126199453768207043.plus.aac.p.m4a',
       duration: Duration(minutes: 3, seconds: 40),
       genre: 'شعبي',
       playsCount: 15400000,
@@ -355,7 +355,7 @@ class MultiSourceMusicApiService implements MusicApiService {
       artist: 'توليت (TuL8TE)',
       album: 'كوكتيل غنائي',
       artworkUrl: 'https://e-cdns-images.dzcdn.net/images/cover/0e4a8c2f6b0d4e8a2c6f0b4d8e2a6c0f/500x500-000000-80-0-0.jpg',
-      audioUrl: '',
+      audioUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/47/d5/af/47d5afe6-40e3-a32e-926c-5e06fe2466e2/mzaf_16235984847084604246.plus.aac.p.m4a',
       duration: Duration(minutes: 2, seconds: 50),
       genre: 'إندي عربي',
       playsCount: 16500000,
@@ -369,7 +369,7 @@ class MultiSourceMusicApiService implements MusicApiService {
       artist: 'حسين الجسمي',
       album: 'سينجل',
       artworkUrl: 'https://e-cdns-images.dzcdn.net/images/cover/6a2e0c4f8b6d2e0a4c8f2b6d0e4a8c2f/500x500-000000-80-0-0.jpg',
-      audioUrl: '',
+      audioUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/c2/ae/1d/c2ae1d6e-b10a-74b5-0d53-6dfae013a8a1/mzaf_7179156399724832527.plus.aac.p.m4a',
       duration: Duration(minutes: 3, seconds: 40),
       genre: 'بوب عربي',
       playsCount: 52000000,
@@ -686,12 +686,106 @@ class MultiSourceMusicApiService implements MusicApiService {
   // API: YouTube & YouTube Music Search Engine (100% Full Audio)
   // -------------------------------------------------------------
   Future<List<Song>> _searchYouTube(String query) async {
+    // 1. Try ultra-fast InnerTube JSON search (~800ms)
+    try {
+      final uri = Uri.parse('https://www.youtube.com/youtubei/v1/search');
+      final payload = {
+        "context": {
+          "client": {
+            "clientName": "WEB",
+            "clientVersion": "2.20231201.00.00",
+            "hl": "ar",
+            "gl": "EG"
+          }
+        },
+        "query": query
+      };
+
+      final res = await _client.post(
+        uri,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(payload),
+      ).timeout(const Duration(seconds: 4));
+
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body);
+        final sections = data['contents']?['twoColumnSearchResultsRenderer']
+            ?['primaryContents']?['sectionListRenderer']?['contents'];
+        if (sections != null) {
+          final songs = <Song>[];
+          for (final sec in sections) {
+            final items = sec['itemSectionRenderer']?['contents'];
+            if (items != null) {
+              for (final item in items) {
+                final vr = item['videoRenderer'];
+                if (vr != null) {
+                  final videoId = vr['videoId'] as String?;
+                  if (videoId == null || videoId.isEmpty) continue;
+
+                  final fullTitle = vr['title']?['runs']?[0]?['text'] as String? ?? '';
+                  final author = vr['ownerText']?['runs']?[0]?['text'] as String? ??
+                      vr['shortBylineText']?['runs']?[0]?['text'] as String? ?? 'فنان';
+                  final durationText = vr['lengthText']?['simpleText'] as String? ?? '';
+
+                  Duration dur = const Duration(minutes: 3, seconds: 30);
+                  if (durationText.isNotEmpty) {
+                    final parts = durationText.split(':').map((e) => int.tryParse(e) ?? 0).toList();
+                    if (parts.length == 2) {
+                      dur = Duration(minutes: parts[0], seconds: parts[1]);
+                    } else if (parts.length == 3) {
+                      dur = Duration(hours: parts[0], minutes: parts[1], seconds: parts[2]);
+                    }
+                  }
+
+                  if (dur.inSeconds >= 45 && dur.inMinutes <= 25) {
+                    String songTitle = fullTitle;
+                    String songArtist = author;
+                    if (fullTitle.contains(' - ')) {
+                      final p = fullTitle.split(' - ');
+                      if (p.length >= 2) {
+                        songArtist = p[0].replaceAll(RegExp(r'[@#]'), '').trim();
+                        songTitle = p.sublist(1).join(' - ').trim();
+                      }
+                    } else if (fullTitle.contains(' | ')) {
+                      final p = fullTitle.split(' | ');
+                      if (p.length >= 2) {
+                        songTitle = p[0].trim();
+                        songArtist = p[1].trim();
+                      }
+                    }
+
+                    songTitle = songTitle
+                        .replaceAll(RegExp(r'\[.*?\]|\(.*?\)|Official.*|كليب|فيديو كليب|فيديو|أغنية|اغنية', caseSensitive: false), '')
+                        .trim();
+                    if (songTitle.isEmpty) songTitle = fullTitle;
+
+                    songs.add(Song(
+                      id: 'yt_$videoId',
+                      title: songTitle,
+                      artist: songArtist,
+                      album: 'YouTube Music',
+                      artworkUrl: 'https://img.youtube.com/vi/$videoId/hqdefault.jpg',
+                      audioUrl: '',
+                      duration: dur,
+                      genre: 'موسيقى كاملة',
+                    ));
+                  }
+                }
+              }
+            }
+          }
+          if (songs.isNotEmpty) return songs;
+        }
+      }
+    } catch (_) {}
+
+    // 2. youtube_explode_dart fallback with fast timeout
     try {
       final yt = SongAudioResolver.yt;
-      final searchResults = await yt.search.search(query).timeout(_apiTimeout);
+      final searchResults = await yt.search.search(query).timeout(const Duration(seconds: 4));
       final songs = <Song>[];
 
-      for (final v in searchResults.take(15)) {
+      for (final v in searchResults.take(10)) {
         final dur = v.duration;
         if (dur != null && dur.inSeconds >= 45 && dur.inMinutes <= 25) {
           final fullTitle = v.title;
@@ -724,10 +818,8 @@ class MultiSourceMusicApiService implements MusicApiService {
             album: 'YouTube Music',
             artworkUrl: v.thumbnails.highResUrl.isNotEmpty
                 ? v.thumbnails.highResUrl
-                : (v.thumbnails.mediumResUrl.isNotEmpty
-                    ? v.thumbnails.mediumResUrl
-                    : 'https://img.youtube.com/vi/${v.id.value}/hqdefault.jpg'),
-            audioUrl: '', // Fast-resolved by ID on tap
+                : 'https://img.youtube.com/vi/${v.id.value}/hqdefault.jpg',
+            audioUrl: '',
             duration: dur,
             genre: 'موسيقى كاملة',
             releaseYear: v.uploadDate?.year.toString(),

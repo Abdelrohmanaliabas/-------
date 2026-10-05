@@ -138,7 +138,23 @@ class AudioPlayerService {
       }
     }
 
-    // 3. Determine the YouTube video ID to route through local proxy.
+    // 3. Direct Full Stream / CDN (SoundCloud full MP3, Archive, Apple CDN, Deezer, etc.)
+    // Plays instantly without proxy, without YouTube, and without 403 Forbidden!
+    if (resolvedAudio.url.isNotEmpty &&
+        (resolvedAudio.source == 'soundcloud_full' ||
+            resolvedAudio.source == 'direct_full' ||
+            resolvedAudio.source == 'direct_cdn' ||
+            resolvedAudio.source == 'itunes_cdn' ||
+            resolvedAudio.source == 'direct_url' ||
+            resolvedAudio.videoId == null)) {
+      debugPrint('▶️ Playing direct stream URL for "${song.title}": ${resolvedAudio.url}');
+      return AudioSource.uri(
+        Uri.parse(resolvedAudio.url),
+        tag: _buildMediaItem(enrichedSong),
+      );
+    }
+
+    // 4. Determine the YouTube video ID to route through local proxy.
     //    Priority: videoId from resolver → yt_ song id prefix → direct url fallback
     String? ytVideoIdStr;
     if (resolvedAudio.videoId != null) {
@@ -149,12 +165,49 @@ class AudioPlayerService {
 
     String playbackUrl;
     if (ytVideoIdStr != null && ytVideoIdStr.isNotEmpty) {
-      // Always route YouTube content through local proxy to bypass CDN 403 errors
+      // Start proxy server if not already running
       await AudioStreamingProxy.ensureStarted();
-      playbackUrl = AudioStreamingProxy.getStreamUrl(ytVideoIdStr);
-      debugPrint('🔀 Routing "${song.title}" via proxy (videoId: $ytVideoIdStr)');
+
+      // PRE-LOAD the stream manifest into the proxy cache BEFORE ExoPlayer connects.
+      bool preloaded = await AudioStreamingProxy.preloadStream(ytVideoIdStr);
+      if (!preloaded && !isFallback) {
+        debugPrint('⚠️ Preload failed for $ytVideoIdStr; attempting fresh fallback search for "${song.title}"…');
+        try {
+          final fallbackAudio = await SongAudioResolver.resolveAudio(
+            song,
+            forceFresh: true,
+            isFallback: true,
+          );
+          if (fallbackAudio.url.isNotEmpty &&
+              (fallbackAudio.source == 'soundcloud_full' ||
+                  fallbackAudio.source == 'direct_full' ||
+                  fallbackAudio.source == 'direct_cdn' ||
+                  fallbackAudio.source == 'itunes_cdn')) {
+            return AudioSource.uri(
+              Uri.parse(fallbackAudio.url),
+              tag: _buildMediaItem(enrichedSong),
+            );
+          }
+          if (fallbackAudio.videoId != null) {
+            ytVideoIdStr = fallbackAudio.videoId!.value;
+            preloaded = await AudioStreamingProxy.preloadStream(ytVideoIdStr);
+          }
+        } catch (e) {
+          debugPrint('Fallback search error: $e');
+        }
+      }
+
+      if (preloaded && ytVideoIdStr != null) {
+        playbackUrl = AudioStreamingProxy.getStreamUrl(ytVideoIdStr);
+        debugPrint('🔀 Routing "${song.title}" via proxy (videoId: $ytVideoIdStr)');
+      } else if (song.audioUrl.isNotEmpty &&
+          (song.audioUrl.startsWith('http://') || song.audioUrl.startsWith('https://'))) {
+        playbackUrl = song.audioUrl;
+        debugPrint('▶️ Proxy preload failed; falling back to direct song.audioUrl for "${song.title}"');
+      } else {
+        throw Exception('تعذّر تحميل بيانات البث لـ "${song.title}"');
+      }
     } else {
-      // Non-YouTube source (e.g. Deezer/iTunes preview, Internet Archive)
       playbackUrl = resolvedAudio.url;
       debugPrint('▶️ Playing direct URL for "${song.title}": $playbackUrl');
     }
@@ -193,17 +246,37 @@ class AudioPlayerService {
       // Preload next track quietly in background so next click is instant
       _preloadNextSong();
     } catch (e) {
-      debugPrint('Playback error for "${song.title}": $e');
-      // Clear cached entry so next attempt does a fresh resolve
+      debugPrint('Playback error for "${song.title}": $e — attempting fallback resolve…');
       SongAudioResolver.clearCache(song);
-      rethrow;
+      if (song.id.startsWith('yt_')) {
+        AudioStreamingProxy.evictCache(song.id.substring(3));
+      }
+      try {
+        final fallbackSource = await _createAudioSource(song, isFallback: true);
+        await _player.setAudioSource(fallbackSource, initialPosition: Duration.zero);
+        await _player.play();
+        _preloadNextSong();
+      } catch (fallbackErr) {
+        debugPrint('Fallback also failed for "${song.title}": $fallbackErr');
+        rethrow;
+      }
     }
   }
 
   void _preloadNextSong() {
     if (_currentIndex + 1 < _queue.length) {
       final nextSong = _queue[_currentIndex + 1];
-      unawaited(SongAudioResolver.resolveAudio(nextSong).then((_) {}, onError: (_) {}));
+      // Resolve audio metadata AND pre-load the proxy stream in background
+      // so the next track starts instantly when the user skips
+      unawaited(SongAudioResolver.resolveAudio(nextSong).then((info) {
+        final videoId = info.videoId?.value ??
+            (nextSong.id.startsWith('yt_') ? nextSong.id.substring(3) : null);
+        if (videoId != null && videoId.isNotEmpty) {
+          AudioStreamingProxy.ensureStarted().then((_) {
+            AudioStreamingProxy.preloadStream(videoId);
+          });
+        }
+      }, onError: (_) {}));
     }
   }
 

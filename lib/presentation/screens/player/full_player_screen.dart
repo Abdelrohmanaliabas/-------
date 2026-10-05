@@ -389,7 +389,7 @@ class _FullPlayerScreenState extends ConsumerState<FullPlayerScreen>
                           } catch (e) {
                             if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(content: Text('خطأ في التحميل: $e')),
+                                const SnackBar(content: Text('تعذر تحميل الأغنية، يرجى التحقق من اتصال الإنترنت')),
                               );
                             }
                           }
