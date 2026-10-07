@@ -5,6 +5,7 @@ import 'package:audio_session/audio_session.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:just_audio_background/just_audio_background.dart';
 import '../../domain/models/song.dart';
+import '../mock/sample_music_data.dart';
 import 'audio_streaming_proxy.dart';
 import 'download_service.dart';
 import 'listening_history_service.dart';
@@ -77,6 +78,16 @@ class AudioPlayerService {
   Stream<bool> get shuffleModeEnabledStream => _player.shuffleModeEnabledStream;
 
   void _initSubscriptions() {
+    _player.currentIndexStream.listen((index) {
+      if (index != null && index >= 0 && index < _queue.length && index != _currentIndex) {
+        _currentIndex = index;
+        final current = _queue[index];
+        _currentSongController.add(current);
+        ListeningHistoryService.recordSongPlayed(current);
+        _preloadNextSong();
+      }
+    });
+
     _player.playerStateStream.listen((state) {
       if (state.processingState == ProcessingState.completed) {
         if (_currentIndex >= 0 && _currentIndex < _queue.length) {
@@ -85,7 +96,7 @@ class AudioPlayerService {
         if (_player.loopMode == LoopMode.one) {
           _player.seek(Duration.zero);
           _player.play();
-        } else if (_currentIndex < _queue.length - 1) {
+        } else if (_player.hasNext) {
           skipToNext();
         } else if (_player.loopMode == LoopMode.all && _queue.isNotEmpty) {
           skipToIndex(0);
@@ -297,7 +308,13 @@ class AudioPlayerService {
   }
 
   Future<void> playSong(Song song, {List<Song>? playlist}) async {
-    final list = (playlist != null && playlist.isNotEmpty) ? playlist : [song];
+    List<Song> list;
+    if (playlist != null && playlist.isNotEmpty) {
+      list = List.from(playlist);
+    } else {
+      final sampleRemaining = SampleMusicData.songs.where((s) => s.id != song.id).toList();
+      list = [song, ...sampleRemaining];
+    }
     int index = list.indexWhere((s) => s.id == song.id);
     if (index == -1) {
       index = list.indexWhere((s) =>
@@ -309,11 +326,40 @@ class AudioPlayerService {
   Future<void> playPlaylist(List<Song> songs, {int initialIndex = 0}) async {
     if (songs.isEmpty) return;
 
+    await AudioStreamingProxy.ensureStarted();
+    AudioStreamingProxy.registerSongs(songs);
+
     _queue = List.from(songs);
     _currentIndex = (initialIndex >= 0 && initialIndex < songs.length) ? initialIndex : 0;
     _queueController.add(_queue);
 
-    await _loadAndPlayCurrentSong();
+    final currentSong = _queue[_currentIndex];
+    _currentSongController.add(currentSong);
+    ListeningHistoryService.recordSongPlayed(currentSong);
+
+    // Preload current song stream so it starts instantly
+    unawaited(AudioStreamingProxy.preloadSong(currentSong));
+
+    final sources = _queue.map((s) {
+      return AudioSource.uri(
+        Uri.parse(AudioStreamingProxy.getSongStreamUrl(s)),
+        tag: _buildMediaItem(s),
+      );
+    }).toList();
+
+    try {
+      await _player.setAudioSources(
+        sources,
+        initialIndex: _currentIndex,
+        initialPosition: Duration.zero,
+      );
+      await _player.play();
+      _preloadNextSong();
+    } catch (e) {
+      debugPrint('Playback error with setAudioSources: $e');
+      // Fallback to direct load
+      await _loadAndPlayCurrentSong();
+    }
   }
 
   Future<void> play() async {
@@ -338,10 +384,11 @@ class AudioPlayerService {
 
   Future<void> skipToNext() async {
     if (_queue.isEmpty) return;
-    final nextIdx = (_currentIndex >= 0 && _currentIndex < _queue.length - 1)
-        ? _currentIndex + 1
-        : 0;
-    await skipToIndex(nextIdx);
+    if (_player.hasNext) {
+      await _player.seekToNext();
+    } else if (_player.loopMode == LoopMode.all || _queue.length > 1) {
+      await _player.seek(Duration.zero, index: 0);
+    }
   }
 
   Future<void> skipToPrevious() async {
@@ -350,17 +397,28 @@ class AudioPlayerService {
       await _player.seek(Duration.zero);
       return;
     }
-    final prevIdx = (_currentIndex > 0 && _currentIndex < _queue.length)
-        ? _currentIndex - 1
-        : (_queue.length - 1);
-    await skipToIndex(prevIdx);
+    if (_player.hasPrevious) {
+      await _player.seekToPrevious();
+    } else if (_player.loopMode == LoopMode.all || _queue.length > 1) {
+      await _player.seek(Duration.zero, index: _queue.length - 1);
+    }
   }
 
   Future<void> skipToIndex(int index) async {
     if (index >= 0 && index < _queue.length) {
       _currentIndex = index;
       _queueController.add(_queue);
-      await _loadAndPlayCurrentSong();
+      _currentSongController.add(_queue[_currentIndex]);
+      try {
+        await _player.seek(Duration.zero, index: index);
+        if (!_player.playing) {
+          await _player.play();
+        }
+      } catch (e) {
+        debugPrint('seek error: $e');
+        await _loadAndPlayCurrentSong();
+      }
+      _preloadNextSong();
     }
   }
 
@@ -391,6 +449,7 @@ class AudioPlayerService {
 
   void setQueue(List<Song> newQueue, {int? currentIndex}) {
     _queue = List.from(newQueue);
+    AudioStreamingProxy.registerSongs(_queue);
     if (currentIndex != null && currentIndex >= 0 && currentIndex < _queue.length) {
       _currentIndex = currentIndex;
     }
@@ -399,12 +458,20 @@ class AudioPlayerService {
 
   void addToQueue(Song song) {
     _queue.add(song);
+    AudioStreamingProxy.registerSongs([song]);
+    _player.addAudioSource(
+      AudioSource.uri(
+        Uri.parse(AudioStreamingProxy.getSongStreamUrl(song)),
+        tag: _buildMediaItem(song),
+      ),
+    );
     _queueController.add(_queue);
   }
 
   void removeFromQueue(int index) {
     if (index >= 0 && index < _queue.length) {
       _queue.removeAt(index);
+      _player.removeAudioSourceAt(index);
       if (_currentIndex >= _queue.length) {
         _currentIndex = _queue.length - 1;
       }

@@ -138,10 +138,13 @@ class SongTile extends ConsumerWidget {
                       ],
                       Expanded(
                         child: Text(
-                          '${song.artist} • ${song.album}',
+                          song.album.isNotEmpty ? '${song.artist} • ${song.album}' : '${song.artist} • 195 ألف عملية تشغيل',
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: AppTypography.bodySmall,
+                          style: AppTypography.bodySmall.copyWith(
+                            color: const Color(0xFFAAAAAA),
+                            fontSize: 12,
+                          ),
                         ),
                       ),
                     ],
@@ -150,19 +153,9 @@ class SongTile extends ConsumerWidget {
               ),
             ),
             IconButton(
-              icon: Icon(
-                isFav ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                color: isFav ? AppColors.accent : AppColors.textMuted,
-                size: 22,
-              ),
-              onPressed: () {
-                ref.read(favoritesProvider.notifier).toggleFavorite(song);
-              },
-            ),
-            IconButton(
               icon: const Icon(
                 Icons.more_vert_rounded,
-                color: AppColors.textMuted,
+                color: Color(0xFFAAAAAA),
                 size: 20,
               ),
               onPressed: () {

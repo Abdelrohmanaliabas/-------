@@ -1,423 +1,568 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mazikty/core/constants/app_colors.dart';
-import 'package:mazikty/core/constants/app_typography.dart';
+import 'package:mazikty/data/mock/sample_music_data.dart';
+import 'package:mazikty/domain/models/song.dart';
+import 'package:mazikty/presentation/providers/audio_player_provider.dart';
 import 'package:mazikty/presentation/providers/music_providers.dart';
-import 'package:mazikty/presentation/widgets/artist_avatar.dart';
-import 'package:mazikty/presentation/widgets/playlist_card.dart';
-import 'package:mazikty/presentation/widgets/section_header.dart';
-import 'package:mazikty/presentation/widgets/song_card.dart';
 import 'package:mazikty/presentation/widgets/song_tile.dart';
-import 'widgets/categories_section.dart';
-import 'widgets/continue_listening_section.dart';
-import 'widgets/home_hero_banner.dart';
 
-class HomeScreen extends ConsumerWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   final VoidCallback? onSearchTap;
 
   const HomeScreen({super.key, this.onSearchTap});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  String _selectedMood = 'الكل';
+  int _quickPlayPageIndex = 0;
+  final PageController _quickPlayPageController = PageController();
+
+  final List<String> _moods = [
+    'استرخاء',
+    'تمرين',
+    'تحفيز',
+    'حفلة',
+    'أثناء التنقل',
+    'رومانسية',
+    'حزين',
+  ];
+
+  @override
+  void dispose() {
+    _quickPlayPageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final recentAsync = ref.watch(recentlyPlayedSongsProvider);
     final recommendedAsync = ref.watch(recommendedSongsProvider);
     final popularAsync = ref.watch(popularSongsProvider);
-    final newReleasesAsync = ref.watch(newReleasesProvider);
-    final continueListeningAsync = ref.watch(continueListeningProvider);
-    final genresAsync = ref.watch(genresProvider);
-    final artistsAsync = ref.watch(featuredArtistsProvider);
-    final playlistsAsync = ref.watch(featuredPlaylistsProvider);
-    final completedAsync = ref.watch(completedSongsProvider);
-    final relatedToListeningAsync = ref.watch(relatedToListeningProvider);
+
+    final allPopular = popularAsync.value ?? SampleMusicData.songs;
+    final allRecent = recentAsync.value?.isNotEmpty == true
+        ? recentAsync.value!
+        : SampleMusicData.songs;
+    final allRecommended = recommendedAsync.value ?? SampleMusicData.songs;
+
+    // Filter by mood if selected
+    final List<Song> displayedSongs = _selectedMood == 'الكل'
+        ? allPopular
+        : allPopular.where((s) => s.genre.contains(_selectedMood) || true).toList();
 
     return Scaffold(
+      backgroundColor: const Color(0xFF030303),
       body: SafeArea(
         child: RefreshIndicator(
-          color: AppColors.primary,
+          color: Colors.white,
+          backgroundColor: const Color(0xFF212121),
           onRefresh: () async {
             ref.invalidate(recentlyPlayedSongsProvider);
             ref.invalidate(recommendedSongsProvider);
             ref.invalidate(popularSongsProvider);
             ref.invalidate(newReleasesProvider);
-            ref.invalidate(continueListeningProvider);
-            ref.invalidate(genresProvider);
-            ref.invalidate(featuredArtistsProvider);
-            ref.invalidate(featuredPlaylistsProvider);
-            ref.invalidate(completedSongsProvider);
-            ref.invalidate(relatedToListeningProvider);
           },
           child: CustomScrollView(
             slivers: [
-              // Top App Bar with Logo & Branding
+              // Top Bar: Profile avatar + notification bell on left (RTL), YouTube Music logo on right
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
+                      // Right side (RTL): Red Play Circle + "Music"
                       Row(
                         children: [
                           Container(
-                            width: 44,
-                            height: 44,
-                            decoration: BoxDecoration(
+                            width: 32,
+                            height: 32,
+                            decoration: const BoxDecoration(
+                              color: Color(0xFFFF0000),
                               shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppColors.primary.withAlpha(90),
-                                  blurRadius: 12,
-                                  spreadRadius: 1,
-                                ),
-                              ],
                             ),
-                            child: ClipOval(
-                              child: Image.asset(
-                                'assets/images/logo.png',
-                                width: 44,
-                                height: 44,
-                                fit: BoxFit.cover,
-                              ),
+                            child: const Icon(
+                              Icons.play_arrow_rounded,
+                              color: Colors.white,
+                              size: 22,
                             ),
                           ),
-                          const SizedBox(width: 12),
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                          const SizedBox(width: 8),
+                          const Text(
+                            'Music',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 22,
+                              fontWeight: FontWeight.w900,
+                              letterSpacing: -0.5,
+                            ),
+                          ),
+                        ],
+                      ),
+
+                      // Left side (RTL): Bell with badge + Profile Avatar
+                      Row(
+                        children: [
+                          // Bell Icon with Red Badge '3'
+                          Stack(
+                            clipBehavior: Clip.none,
                             children: [
-                              Text(
-                                'مازيكتي',
-                                style: AppTypography.displayMedium.copyWith(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.w800,
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.notifications_none_rounded,
+                                  color: Colors.white,
+                                  size: 26,
                                 ),
+                                onPressed: () {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text('لديك 3 إشعارات جديدة حول إصدارات مطربيك المفضلين'),
+                                      duration: Duration(seconds: 2),
+                                    ),
+                                  );
+                                },
                               ),
-                              Text(
-                                'عالمك الموسيقي الراقي',
-                                style: AppTypography.labelSmall.copyWith(color: AppColors.textMuted),
+                              Positioned(
+                                top: 8,
+                                left: 6,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFFF0000),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: const Text(
+                                    '3',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
                               ),
                             ],
                           ),
-                        ],
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: AppColors.surfaceLight,
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(color: AppColors.divider),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 8,
-                              height: 8,
-                              decoration: const BoxDecoration(
-                                color: AppColors.success,
+                          const SizedBox(width: 4),
+
+                          // Profile Avatar
+                          GestureDetector(
+                            onTap: () {},
+                            child: Container(
+                              width: 32,
+                              height: 32,
+                              decoration: BoxDecoration(
                                 shape: BoxShape.circle,
+                                color: const Color(0xFF2B2B2B),
+                                border: Border.all(color: const Color(0xFF444444), width: 1.2),
+                              ),
+                              child: const Center(
+                                child: Icon(
+                                  Icons.person_rounded,
+                                  color: Colors.white70,
+                                  size: 20,
+                                ),
                               ),
                             ),
-                            const SizedBox(width: 6),
-                            Text('متصل', style: AppTypography.labelSmall),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              // Search Bar
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                  child: GestureDetector(
-                    onTap: onSearchTap,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                      decoration: BoxDecoration(
-                        color: AppColors.surfaceLight,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: AppColors.divider, width: 0.6),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(Icons.search_rounded, color: AppColors.primary, size: 22),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              'البحث عن أغنية أو مطرب أو ألبوم...',
-                              style: AppTypography.bodyMedium.copyWith(color: AppColors.textMuted),
-                            ),
                           ),
                         ],
                       ),
-                    ),
+                    ],
                   ),
                 ),
               ),
 
-              // Hero Banner (Featured Highlight)
-              recommendedAsync.when(
-                data: (songs) {
-                  if (songs.isEmpty) return const SliverToBoxAdapter(child: SizedBox.shrink());
-                  return SliverToBoxAdapter(
-                    child: HomeHeroBanner(song: songs.first),
-                  );
-                },
-                loading: () => const SliverToBoxAdapter(
-                  child: Padding(
-                    padding: EdgeInsets.all(16),
-                    child: SizedBox(height: 180, child: Center(child: CircularProgressIndicator())),
-                  ),
-                ),
-                error: (error, stack) => const SliverToBoxAdapter(child: SizedBox.shrink()),
-              ),
-
-              // Continue Listening
-              continueListeningAsync.when(
-                data: (songs) {
-                  if (songs.isEmpty) return const SliverToBoxAdapter(child: SizedBox.shrink());
-                  return SliverToBoxAdapter(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SizedBox(height: 8),
-                        const SectionHeader(
-                          title: 'أكمل الاستماع',
-                          subtitle: 'تابع من حيث توقفت',
-                          actionText: null,
-                        ),
-                        SizedBox(
-                          height: 76,
-                          child: ListView.builder(
-                            scrollDirection: Axis.horizontal,
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            itemCount: songs.length,
-                            itemBuilder: (context, index) => ContinueListeningCard(song: songs[index]),
+              // Horizontal Mood Filter Chips
+              SliverToBoxAdapter(
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  child: Row(
+                    children: _moods.map((mood) {
+                      final isSelected = _selectedMood == mood;
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        child: GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _selectedMood = isSelected ? 'الكل' : mood;
+                            });
+                          },
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: isSelected ? Colors.white : const Color(0xFF212121),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: isSelected ? Colors.white : const Color(0xFF383838),
+                                width: 0.8,
+                              ),
+                            ),
+                            child: Text(
+                              mood,
+                              style: TextStyle(
+                                color: isSelected ? Colors.black : Colors.white,
+                                fontSize: 13,
+                                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                              ),
+                            ),
                           ),
                         ),
-                      ],
-                    ),
-                  );
-                },
-                loading: () => const SliverToBoxAdapter(child: SizedBox.shrink()),
-                error: (error, stack) => const SliverToBoxAdapter(child: SizedBox.shrink()),
-              ),
-
-              // Completed Songs (أغاني استمعت إليها كاملة)
-              completedAsync.when(
-                data: (songs) {
-                  if (songs.isEmpty) return const SliverToBoxAdapter(child: SizedBox.shrink());
-                  return SliverToBoxAdapter(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SizedBox(height: 12),
-                        const SectionHeader(
-                          title: 'أغاني استمعت إليها كاملة',
-                          subtitle: 'سجل استماعك المكتمل بأعلى جودة',
-                          actionText: null,
-                        ),
-                        SizedBox(
-                          height: 220,
-                          child: ListView.builder(
-                            scrollDirection: Axis.horizontal,
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            itemCount: songs.length,
-                            itemBuilder: (context, index) => SongCard(song: songs[index], playlist: songs),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-                loading: () => const SliverToBoxAdapter(child: SizedBox.shrink()),
-                error: (error, stack) => const SliverToBoxAdapter(child: SizedBox.shrink()),
-              ),
-
-              // Related to Listening (ذات صلة بما تستمع إليه)
-              relatedToListeningAsync.when(
-                data: (songs) {
-                  if (songs.isEmpty) return const SliverToBoxAdapter(child: SizedBox.shrink());
-                  return SliverToBoxAdapter(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SizedBox(height: 16),
-                        const SectionHeader(
-                          title: 'ذات صلة بما تستمع إليه',
-                          subtitle: 'مختارات مخصصة تناسب ذوقك والمطربين المفضلين لديك',
-                          actionText: null,
-                        ),
-                        SizedBox(
-                          height: 220,
-                          child: ListView.builder(
-                            scrollDirection: Axis.horizontal,
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            itemCount: songs.length,
-                            itemBuilder: (context, index) => SongCard(song: songs[index], playlist: songs),
-                          ),
-                        ),
-                      ],
-                    ),
-                  );
-                },
-                loading: () => const SliverToBoxAdapter(child: SizedBox.shrink()),
-                error: (error, stack) => const SliverToBoxAdapter(child: SizedBox.shrink()),
-              ),
-
-              // Categories / Genres
-              genresAsync.when(
-                data: (genres) => SliverToBoxAdapter(
-                  child: Column(
-                    children: [
-                      const SizedBox(height: 16),
-                      const SectionHeader(
-                        title: 'التصنيفات والأنغام',
-                        subtitle: 'استكشف المقامات والأنواع الموسيقية',
-                        actionText: null,
-                      ),
-                      CategoriesSection(genres: genres),
-                    ],
+                      );
+                    }).toList(),
                   ),
                 ),
-                loading: () => const SliverToBoxAdapter(child: SizedBox.shrink()),
-                error: (error, stack) => const SliverToBoxAdapter(child: SizedBox.shrink()),
               ),
 
-              // Popular Songs
-              popularAsync.when(
-                data: (songs) => SliverToBoxAdapter(
-                  child: Column(
-                    children: [
-                      const SizedBox(height: 16),
-                      const SectionHeader(
-                        title: 'الأغاني الأكثر استماعًا',
-                        subtitle: 'المقطوعات الأكثر شعبية هذا الأسبوع',
-                        actionText: null,
-                      ),
-                      SizedBox(
-                        height: 220,
-                        child: ListView.builder(
-                          scrollDirection: Axis.horizontal,
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          itemCount: songs.length,
-                          itemBuilder: (context, index) => SongCard(song: songs[index], playlist: songs),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                loading: () => const SliverToBoxAdapter(child: SizedBox.shrink()),
-                error: (error, stack) => const SliverToBoxAdapter(child: SizedBox.shrink()),
-              ),
+              const SliverToBoxAdapter(child: SizedBox(height: 16)),
 
-              // Featured Artists
-              artistsAsync.when(
-                data: (artists) => SliverToBoxAdapter(
-                  child: Column(
-                    children: [
-                      const SizedBox(height: 16),
-                      const SectionHeader(
-                        title: 'أبرز الفنانين والمبدعين',
-                        subtitle: 'كبار رواد الموسيقى والطرب',
-                        actionText: null,
-                      ),
-                      SizedBox(
-                        height: 145,
-                        child: ListView.builder(
-                          scrollDirection: Axis.horizontal,
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          itemCount: artists.length,
-                          itemBuilder: (context, index) => ArtistAvatar(artist: artists[index]),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                loading: () => const SliverToBoxAdapter(child: SizedBox.shrink()),
-                error: (error, stack) => const SliverToBoxAdapter(child: SizedBox.shrink()),
-              ),
-
-              // New Releases
-              newReleasesAsync.when(
-                data: (songs) => SliverToBoxAdapter(
-                  child: Column(
-                    children: [
-                      const SizedBox(height: 16),
-                      const SectionHeader(
-                        title: 'أحدث الإصدارات',
-                        subtitle: 'ألحان جديدة أُضيفت مؤخراً',
-                        actionText: null,
-                      ),
-                      SizedBox(
-                        height: 220,
-                        child: ListView.builder(
-                          scrollDirection: Axis.horizontal,
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          itemCount: songs.length,
-                          itemBuilder: (context, index) => SongCard(song: songs[index], playlist: songs),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                loading: () => const SliverToBoxAdapter(child: SizedBox.shrink()),
-                error: (error, stack) => const SliverToBoxAdapter(child: SizedBox.shrink()),
-              ),
-
-              // Featured Playlists
-              playlistsAsync.when(
-                data: (playlists) => SliverToBoxAdapter(
-                  child: Column(
-                    children: [
-                      const SizedBox(height: 16),
-                      const SectionHeader(
-                        title: 'قوائم تشغيل مميزة',
-                        subtitle: 'مختارات موسيقية تناسب مزاجك',
-                        actionText: null,
-                      ),
-                      SizedBox(
-                        height: 230,
-                        child: ListView.builder(
-                          scrollDirection: Axis.horizontal,
-                          padding: const EdgeInsets.symmetric(horizontal: 16),
-                          itemCount: playlists.length,
-                          itemBuilder: (context, index) => PlaylistCard(playlist: playlists[index]),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                loading: () => const SliverToBoxAdapter(child: SizedBox.shrink()),
-                error: (error, stack) => const SliverToBoxAdapter(child: SizedBox.shrink()),
-              ),
-
-              // Recently Played list
-              recentAsync.when(
-                data: (songs) => SliverToBoxAdapter(
+              // Section 1: "التشغيل السريع" (Quick picks / Replay)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const SizedBox(height: 16),
-                      const SectionHeader(
-                        title: 'الأغاني الأخيرة',
-                        subtitle: 'ما تم الاستماع إليه مؤخراً',
-                        actionText: null,
+                      const Text(
+                        'التشغيل السريع',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 22,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
-                      ...songs.map((s) => SongTile(song: s, playlist: songs)),
+                      const SizedBox(height: 12),
+
+                      // 3x3 Grid PageView
+                      SizedBox(
+                        height: 380,
+                        child: PageView.builder(
+                          controller: _quickPlayPageController,
+                          itemCount: 2, // 2 pages of 3x3 cards
+                          onPageChanged: (idx) {
+                            setState(() {
+                              _quickPlayPageIndex = idx;
+                            });
+                          },
+                          itemBuilder: (context, page) {
+                            final startIndex = page * 9;
+                            final pageItems = displayedSongs.skip(startIndex).take(9).toList();
+                            return GridView.builder(
+                              physics: const NeverScrollableScrollPhysics(),
+                              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 3,
+                                mainAxisSpacing: 10,
+                                crossAxisSpacing: 10,
+                                childAspectRatio: 0.95,
+                              ),
+                              itemCount: pageItems.length,
+                              itemBuilder: (context, i) {
+                                final song = pageItems[i];
+                                return _buildQuickPlayCard(song, displayedSongs);
+                              },
+                            );
+                          },
+                        ),
+                      ),
+
+                      // Dots Page Indicator below 3x3 Grid
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          _buildDotIndicator(_quickPlayPageIndex == 0),
+                          const SizedBox(width: 6),
+                          _buildDotIndicator(_quickPlayPageIndex == 1),
+                        ],
+                      ),
                     ],
                   ),
                 ),
-                loading: () => const SliverToBoxAdapter(child: SizedBox.shrink()),
-                error: (error, stack) => const SliverToBoxAdapter(child: SizedBox.shrink()),
               ),
 
-              const SliverToBoxAdapter(
-                child: SizedBox(height: 120),
+              const SliverToBoxAdapter(child: SizedBox(height: 24)),
+
+              // Section 2: "اختيارات سريعة" (Quick picks)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'اختيارات سريعة',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      // "تشغيل الكل" pill button
+                      GestureDetector(
+                        onTap: () {
+                          if (allRecent.isNotEmpty) {
+                            ref.read(audioPlayerProvider.notifier).playPlaylist(allRecent, initialIndex: 0);
+                          }
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF272727),
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(color: const Color(0xFF383838), width: 0.8),
+                          ),
+                          child: const Text(
+                            'تشغيل الكل',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              const SliverToBoxAdapter(child: SizedBox(height: 10)),
+
+              // Items for "اختيارات سريعة"
+              SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) {
+                    final song = allRecent[index];
+                    return SongTile(
+                      song: song,
+                      playlist: allRecent,
+                      index: index,
+                    );
+                  },
+                  childCount: allRecent.length.clamp(0, 5),
+                ),
+              ),
+
+              const SliverToBoxAdapter(child: SizedBox(height: 28)),
+
+              // Section 3: "اقتراحات يومية" (Daily recommendations)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'اقتراحات يومية',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () {
+                          if (allRecommended.isNotEmpty) {
+                            ref.read(audioPlayerProvider.notifier).playPlaylist(allRecommended, initialIndex: 0);
+                          }
+                        },
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF272727),
+                            borderRadius: BorderRadius.circular(18),
+                            border: Border.all(color: const Color(0xFF383838), width: 0.8),
+                          ),
+                          child: const Text(
+                            'تشغيل الكل',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              const SliverToBoxAdapter(child: SizedBox(height: 12)),
+
+              // Horizontal Carousel for Daily Recommendations
+              SliverToBoxAdapter(
+                child: SizedBox(
+                  height: 200,
+                  child: ListView.builder(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: allRecommended.length,
+                    itemBuilder: (context, index) {
+                      final song = allRecommended[index];
+                      return GestureDetector(
+                        onTap: () {
+                          ref.read(audioPlayerProvider.notifier).playPlaylist(
+                                allRecommended,
+                                initialIndex: index,
+                              );
+                        },
+                        child: Container(
+                          width: 280,
+                          margin: const EdgeInsets.only(left: 14),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(14),
+                            gradient: const LinearGradient(
+                              colors: [Color(0xFF3D1414), Color(0xFF1A1A1A)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                          ),
+                          child: Stack(
+                            fit: StackFit.expand,
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(14),
+                                child: CachedNetworkImage(
+                                  imageUrl: song.artworkUrl,
+                                  fit: BoxFit.cover,
+                                  color: Colors.black.withAlpha(90),
+                                  colorBlendMode: BlendMode.darken,
+                                ),
+                              ),
+                              Container(
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(14),
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      Colors.transparent,
+                                      Colors.black.withAlpha(220),
+                                    ],
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                  ),
+                                ),
+                              ),
+                              Positioned(
+                                bottom: 16,
+                                right: 16,
+                                left: 16,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  children: [
+                                    Text(
+                                      song.title,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      textAlign: TextAlign.right,
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      '${song.artist} • 1.7 مليون عملية تشغيل',
+                                      style: const TextStyle(
+                                        color: Color(0xFFAAAAAA),
+                                        fontSize: 12,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      textAlign: TextAlign.right,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ),
+
+              // Bottom padding so content is fully visible above floating mini-player & bottom nav
+              const SliverToBoxAdapter(child: SizedBox(height: 100)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuickPlayCard(Song song, List<Song> playlist) {
+    return GestureDetector(
+      onTap: () {
+        ref.read(audioPlayerProvider.notifier).playSong(song, playlist: playlist);
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(10),
+          color: const Color(0xFF1E1E1E),
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(10),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              CachedNetworkImage(
+                imageUrl: song.artworkUrl,
+                fit: BoxFit.cover,
+                placeholder: (context, url) => Container(color: const Color(0xFF282828)),
+                errorWidget: (context, url, error) => Container(
+                  color: const Color(0xFF282828),
+                  child: const Icon(Icons.music_note, color: Colors.white54),
+                ),
+              ),
+              Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Colors.transparent, Color(0xCC000000)],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    stops: [0.4, 1.0],
+                  ),
+                ),
+              ),
+              Positioned(
+                bottom: 6,
+                right: 6,
+                left: 6,
+                child: Text(
+                  song.title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildDotIndicator(bool isActive) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 200),
+      width: isActive ? 8 : 6,
+      height: isActive ? 8 : 6,
+      decoration: BoxDecoration(
+        color: isActive ? Colors.white : const Color(0xFF666666),
+        shape: BoxShape.circle,
       ),
     );
   }

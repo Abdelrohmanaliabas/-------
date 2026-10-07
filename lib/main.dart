@@ -14,7 +14,7 @@ void main() async {
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
       statusBarIconBrightness: Brightness.light,
-      systemNavigationBarColor: Color(0xFF090D16),
+      systemNavigationBarColor: Color(0xFF030303),
       systemNavigationBarIconBrightness: Brightness.light,
     ),
   );
@@ -27,6 +27,7 @@ void main() async {
       androidNotificationOngoing: false,
       androidStopForegroundOnPause: false,
       androidNotificationIcon: 'mipmap/ic_launcher',
+      notificationColor: const Color(0xFF212121),
     );
   } catch (e) {
     debugPrint('JustAudioBackground init notification: $e');

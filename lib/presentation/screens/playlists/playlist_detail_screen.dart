@@ -1,14 +1,10 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mazikty/core/constants/app_colors.dart';
-import 'package:mazikty/core/constants/app_typography.dart';
-import 'package:mazikty/core/utils/formatters.dart';
 import 'package:mazikty/domain/models/playlist.dart';
 import 'package:mazikty/presentation/providers/audio_player_provider.dart';
 import 'package:mazikty/presentation/providers/favorites_provider.dart';
 import 'package:mazikty/presentation/providers/playlists_provider.dart';
-import 'package:mazikty/presentation/widgets/empty_state_view.dart';
 import 'package:mazikty/presentation/widgets/song_tile.dart';
 import 'create_playlist_dialog.dart';
 
@@ -23,7 +19,6 @@ class PlaylistDetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final playlistsAsync = ref.watch(playlistsProvider);
-    // Find current updated version of playlist
     final currentPlaylist = playlistsAsync.value?.firstWhere(
           (p) => p.id == playlist.id,
           orElse: () => playlist,
@@ -31,261 +26,301 @@ class PlaylistDetailScreen extends ConsumerWidget {
         playlist;
 
     final songs = currentPlaylist.songs;
+    final favState = ref.watch(favoritesProvider);
+    final favIds = favState.value?.map((s) => s.id).toSet() ?? {};
+    final isSaved = favIds.contains(currentPlaylist.id);
 
     return Scaffold(
-      body: CustomScrollView(
-        slivers: [
-          SliverAppBar(
-            expandedHeight: 300,
-            pinned: true,
-            flexibleSpace: FlexibleSpaceBar(
-              title: Text(
-                currentPlaylist.name,
-                style: AppTypography.titleMedium.copyWith(color: Colors.white),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-              background: Stack(
-                fit: StackFit.expand,
-                children: [
-                  CachedNetworkImage(
-                    imageUrl: currentPlaylist.artworkUrl,
-                    fit: BoxFit.cover,
-                  ),
-                  Container(
-                    decoration: const BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [Colors.transparent, AppColors.background],
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                      ),
+      backgroundColor: const Color(0xFF030303),
+      body: SafeArea(
+        child: CustomScrollView(
+          slivers: [
+            // Top Bar: Back & Cast
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.arrow_forward_rounded, color: Colors.white, size: 24),
+                      onPressed: () => Navigator.pop(context),
                     ),
-                  ),
-                ],
-              ),
-            ),
-            actions: [
-              if (currentPlaylist.isCustom)
-                PopupMenuButton<String>(
-                  icon: const Icon(Icons.more_vert_rounded),
-                  color: AppColors.surface,
-                  onSelected: (val) {
-                    if (val == 'rename') {
-                      showRenamePlaylistDialog(
-                        context,
-                        ref,
-                        currentPlaylist.id,
-                        currentPlaylist.name,
-                      );
-                    } else if (val == 'delete') {
-                      _showDeleteConfirmation(context, ref, currentPlaylist.id);
-                    }
-                  },
-                  itemBuilder: (_) => [
-                    const PopupMenuItem(
-                      value: 'rename',
-                      child: Text('إعادة تسمية'),
-                    ),
-                    const PopupMenuItem(
-                      value: 'delete',
-                      child: Text('حذف القائمة', style: TextStyle(color: AppColors.error)),
+                    IconButton(
+                      icon: const Icon(Icons.cast_rounded, color: Colors.white, size: 22),
+                      onPressed: () {},
                     ),
                   ],
                 ),
-            ],
-          ),
+              ),
+            ),
 
-          // Playlist Meta & Actions
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  if (currentPlaylist.description != null) ...[
+            // Cover Art, Title & Meta (YouTube Music Playlist Header)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Column(
+                  children: [
+                    // Center Square Artwork
+                    Center(
+                      child: Container(
+                        width: 220,
+                        height: 220,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withAlpha(200),
+                              blurRadius: 24,
+                              offset: const Offset(0, 8),
+                            ),
+                          ],
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: CachedNetworkImage(
+                            imageUrl: currentPlaylist.artworkUrl,
+                            fit: BoxFit.cover,
+                            placeholder: (context, url) => Container(color: const Color(0xFF1E1E1E)),
+                            errorWidget: (context, url, error) => Container(
+                              color: const Color(0xFF1E1E1E),
+                              child: const Icon(Icons.queue_music, size: 60, color: Colors.white54),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Playlist Title
                     Text(
-                      currentPlaylist.description!,
-                      style: AppTypography.bodyMedium,
+                      currentPlaylist.name,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 8),
-                  ],
-                  Row(
-                    children: [
-                      const Icon(Icons.music_note_rounded, size: 16, color: AppColors.textMuted),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${currentPlaylist.songsCount} أغنية',
-                        style: AppTypography.bodySmall,
-                      ),
-                      if (currentPlaylist.songs.isNotEmpty) ...[
-                        const Text(' • ', style: TextStyle(color: AppColors.textMuted)),
+
+                    // Creator Row: Avatar + Name
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 22,
+                          height: 22,
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Color(0xFF333333),
+                          ),
+                          child: const Icon(Icons.person, size: 14, color: Colors.white70),
+                        ),
+                        const SizedBox(width: 8),
                         Text(
-                          Formatters.formatDuration(currentPlaylist.totalDuration),
-                          style: AppTypography.bodySmall,
+                          currentPlaylist.description?.isNotEmpty == true
+                              ? currentPlaylist.description!
+                              : 'مازيكتي للموسيقى',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ],
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: songs.isEmpty
-                              ? null
-                              : () {
-                                  ref.read(audioPlayerProvider.notifier).playPlaylist(songs);
-                                },
-                          icon: const Icon(Icons.play_arrow_rounded, color: Colors.black),
-                          label: Text(
-                            'تشغيل الكل',
-                            style: AppTypography.labelLarge.copyWith(color: Colors.black),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                    ),
+                    const SizedBox(height: 6),
+
+                    // Metadata: views • duration • date
+                    Text(
+                      '2.1 مليون مشاهدة • ${currentPlaylist.songsCount} مقطع • تم التحديث مؤخراً',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Color(0xFFAAAAAA),
+                        fontSize: 12,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Action Buttons Row: [3-dots, Comments, BIG WHITE PLAY, Bookmark, Download]
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        _buildCircleActionButton(
+                          icon: Icons.more_vert_rounded,
+                          onTap: () {
+                            if (currentPlaylist.isCustom) {
+                              showRenamePlaylistDialog(
+                                context,
+                                ref,
+                                currentPlaylist.id,
+                                currentPlaylist.name,
+                              );
+                            }
+                          },
+                        ),
+                        const SizedBox(width: 14),
+                        _buildCircleActionButton(
+                          icon: Icons.chat_bubble_outline_rounded,
+                          onTap: () {},
+                        ),
+                        const SizedBox(width: 14),
+
+                        // Big White Circular Play Button
+                        GestureDetector(
+                          onTap: () {
+                            if (songs.isNotEmpty) {
+                              ref.read(audioPlayerProvider.notifier).playPlaylist(songs, initialIndex: 0);
+                            }
+                          },
+                          child: Container(
+                            width: 60,
+                            height: 60,
+                            decoration: const BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.white,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Color(0x33000000),
+                                  blurRadius: 14,
+                                  offset: Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: const Center(
+                              child: Icon(
+                                Icons.play_arrow_rounded,
+                                color: Colors.black,
+                                size: 38,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      OutlinedButton.icon(
-                        onPressed: songs.isEmpty
-                            ? null
-                            : () {
-                                ref.read(audioPlayerProvider.notifier).playPlaylist(songs);
-                                ref.read(audioPlayerProvider.notifier).toggleShuffle();
-                              },
-                        icon: const Icon(Icons.shuffle_rounded, color: AppColors.primary),
-                        label: Text('خلط', style: AppTypography.labelMedium),
-                        style: OutlinedButton.styleFrom(
-                          side: const BorderSide(color: AppColors.divider),
-                          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
+                        const SizedBox(width: 14),
+
+                        _buildCircleActionButton(
+                          icon: isSaved ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
+                          onTap: () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('تمت إضافة ${currentPlaylist.name} إلى مكتبتك'),
+                                duration: const Duration(seconds: 2),
+                              ),
+                            );
+                          },
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      Builder(
-                        builder: (context) {
-                          final favState = ref.watch(favoritesProvider);
-                          final favIds = favState.value?.map((s) => s.id).toSet() ?? {};
-                          final allInFav = songs.isNotEmpty && songs.every((s) => favIds.contains(s.id));
+                        const SizedBox(width: 14),
 
-                          return IconButton.filledTonal(
-                            onPressed: songs.isEmpty
-                                ? null
-                                : () async {
-                                    final count = await ref
-                                        .read(favoritesProvider.notifier)
-                                        .addAllToFavorites(songs);
-                                    if (context.mounted) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(
-                                          content: Text(
-                                            count > 0
-                                                ? 'تمت إضافة $count أغنية إلى المفضلة ❤️'
-                                                : 'جميع أغاني هذه القائمة موجودة بالفعل في المفضلة ❤️',
-                                            style: const TextStyle(fontFamily: 'Cairo'),
-                                          ),
-                                          backgroundColor: AppColors.surface,
-                                          behavior: SnackBarBehavior.floating,
-                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                                        ),
-                                      );
-                                    }
-                                  },
-                            style: IconButton.styleFrom(
-                              backgroundColor: allInFav ? AppColors.primary.withValues(alpha: 0.2) : AppColors.surfaceLight,
-                              side: BorderSide(color: allInFav ? AppColors.primary : AppColors.divider),
-                            ),
-                            icon: Icon(
-                              allInFav ? Icons.favorite_rounded : Icons.favorite_border_rounded,
-                              color: AppColors.primary,
-                            ),
-                            tooltip: allInFav ? 'جميع الأغاني في المفضلة' : 'إضافة جميع الأغاني للمفضلة',
-                          );
-                        },
+                        _buildCircleActionButton(
+                          icon: Icons.arrow_downward_rounded,
+                          onTap: () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('جاري تحميل قائمة التشغيل للاستماع بدون إنترنت...'),
+                                duration: Duration(seconds: 2),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Promotional banner card (matching Image 4)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1E1E1E),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFF2A2A2A)),
                       ),
-                    ],
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(6),
+                              color: const Color(0xFF2B2B2B),
+                            ),
+                            child: const Icon(Icons.auto_awesome_rounded, color: Colors.white, size: 20),
+                          ),
+                          const SizedBox(width: 12),
+                          const Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'جرّب الآن',
+                                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                                ),
+                                SizedBox(height: 2),
+                                Text(
+                                  'انقر لمعاينة قائمة التشغيل هذه والعثور على أغانيك المفضلة',
+                                  style: TextStyle(color: Color(0xFFAAAAAA), fontSize: 11),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            const SliverToBoxAdapter(child: SizedBox(height: 16)),
+
+            // Song List
+            if (songs.isEmpty)
+              const SliverToBoxAdapter(
+                child: Padding(
+                  padding: EdgeInsets.all(40),
+                  child: Center(
+                    child: Text('لا توجد مقاطع في هذه القائمة بعد', style: TextStyle(color: Colors.white54)),
                   ),
-                  const SizedBox(height: 12),
-                ],
+                ),
+              )
+            else
+              SliverList(
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) {
+                    final song = songs[index];
+                    return SongTile(
+                      song: song,
+                      playlist: songs,
+                      index: index,
+                    );
+                  },
+                  childCount: songs.length,
+                ),
               ),
-            ),
-          ),
 
-          // Songs List
-          if (songs.isEmpty)
-            const SliverFillRemaining(
-              hasScrollBody: false,
-              child: EmptyStateView(
-                icon: Icons.queue_music_rounded,
-                title: 'هذه القائمة فارغة',
-                message: 'تصفح الأغاني وأضف مقطوعاتك المفضلة إلى هذه القائمة لتستمع إليها في أي وقت.',
-              ),
-            )
-          else
-            SliverList(
-              delegate: SliverChildBuilderDelegate(
-                (context, index) {
-                  final song = songs[index];
-                  return SongTile(
-                    song: song,
-                    playlist: songs,
-                    index: index,
-                    showIndex: true,
-                    onRemove: currentPlaylist.isCustom
-                        ? () {
-                            ref.read(playlistsProvider.notifier).removeSongFromPlaylist(
-                                  currentPlaylist.id,
-                                  song.id,
-                                );
-                          }
-                        : null,
-                  );
-                },
-                childCount: songs.length,
-              ),
-            ),
-
-          const SliverToBoxAdapter(
-            child: SizedBox(height: 100),
-          ),
-        ],
+            const SliverToBoxAdapter(child: SizedBox(height: 100)),
+          ],
+        ),
       ),
     );
   }
 
-  void _showDeleteConfirmation(BuildContext context, WidgetRef ref, String playlistId) {
-    showDialog(
-      context: context,
-      builder: (dialogCtx) => AlertDialog(
-        backgroundColor: AppColors.surface,
-        title: Text('حذف قائمة التشغيل', style: AppTypography.titleMedium),
-        content: Text('هل أنت متأكد من رغبتك في حذف هذه القائمة؟', style: AppTypography.bodyMedium),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogCtx),
-            child: Text('إلغاء', style: AppTypography.labelMedium),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
-            onPressed: () async {
-              await ref.read(playlistsProvider.notifier).deletePlaylist(playlistId);
-              if (dialogCtx.mounted) {
-                Navigator.pop(dialogCtx);
-              }
-              if (context.mounted) {
-                Navigator.pop(context);
-              }
-            },
-            child: Text('حذف', style: AppTypography.labelLarge.copyWith(color: Colors.white)),
-          ),
-        ],
+  Widget _buildCircleActionButton({
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 44,
+        height: 44,
+        decoration: const BoxDecoration(
+          shape: BoxShape.circle,
+          color: Color(0xFF212121),
+        ),
+        child: Center(
+          child: Icon(icon, color: Colors.white, size: 22),
+        ),
       ),
     );
   }

@@ -1,7 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:mazikty/core/constants/app_colors.dart';
 import 'package:mazikty/core/constants/app_typography.dart';
 import 'package:mazikty/presentation/providers/audio_player_provider.dart';
 import 'package:mazikty/presentation/screens/player/full_player_screen.dart';
@@ -19,15 +18,18 @@ class MiniPlayer extends ConsumerWidget {
     }
 
     final double progress = (playerState.duration.inMilliseconds > 0)
-        ? (playerState.position.inMilliseconds / playerState.duration.inMilliseconds).clamp(0.0, 1.0)
+        ? (playerState.position.inMilliseconds / playerState.duration.inMilliseconds)
+            .clamp(0.0, 1.0)
         : 0.0;
 
     return GestureDetector(
       onTap: () {
         Navigator.of(context).push(
           PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) => const FullPlayerScreen(),
-            transitionsBuilder: (context, animation, secondaryAnimation, child) {
+            pageBuilder: (context, animation, secondaryAnimation) =>
+                const FullPlayerScreen(),
+            transitionsBuilder:
+                (context, animation, secondaryAnimation, child) {
               return SlideTransition(
                 position: Tween<Offset>(
                   begin: const Offset(0, 1),
@@ -42,39 +44,96 @@ class MiniPlayer extends ConsumerWidget {
         );
       },
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-        decoration: BoxDecoration(
-          color: AppColors.surfaceLight,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.divider, width: 0.8),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withAlpha(120),
-              blurRadius: 16,
-              offset: const Offset(0, -4),
-            ),
-          ],
+        height: 60,
+        decoration: const BoxDecoration(
+          color: Color(0xFF212121),
+          border: Border(
+            top: BorderSide(color: Color(0xFF2C2C2C), width: 0.8),
+          ),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+        child: Stack(
           children: [
-            // Micro progress line
-            ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-              child: LinearProgressIndicator(
-                value: progress,
-                backgroundColor: Colors.transparent,
-                valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
-                minHeight: 2.5,
-              ),
-            ),
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 12),
               child: Row(
                 children: [
-                  // Artwork
+                  // Play/Pause button (far left in RTL)
+                  IconButton(
+                    iconSize: 30,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                    color: Colors.white,
+                    icon: playerState.isBuffering
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : Icon(
+                            playerState.isPlaying
+                                ? Icons.pause_rounded
+                                : Icons.play_arrow_rounded,
+                            size: 32,
+                          ),
+                    onPressed: () {
+                      ref.read(audioPlayerProvider.notifier).playOrPause();
+                    },
+                  ),
+                  const SizedBox(width: 8),
+
+                  // Cast icon
+                  IconButton(
+                    iconSize: 22,
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                    color: Colors.white,
+                    icon: const Icon(Icons.cast_rounded),
+                    onPressed: () {
+                      // Cast / output device options
+                    },
+                  ),
+                  const SizedBox(width: 12),
+
+                  // Song title & artist (middle)
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          song.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.right,
+                          style: AppTypography.titleSmall.copyWith(
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          song.artist,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.right,
+                          style: AppTypography.bodySmall.copyWith(
+                            fontSize: 12,
+                            color: const Color(0xFFAAAAAA),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+
+                  // Artwork thumbnail (far right in RTL)
                   ClipRRect(
-                    borderRadius: BorderRadius.circular(10),
+                    borderRadius: BorderRadius.circular(4),
                     child: CachedNetworkImage(
                       imageUrl: song.artworkUrl,
                       width: 44,
@@ -83,73 +142,31 @@ class MiniPlayer extends ConsumerWidget {
                       placeholder: (context, url) => Container(
                         width: 44,
                         height: 44,
-                        color: AppColors.surfaceCard,
-                        child: const Icon(Icons.music_note, color: AppColors.textMuted, size: 20),
+                        color: const Color(0xFF2C2C2C),
+                        child: const Icon(Icons.music_note, color: Colors.white54, size: 22),
                       ),
                       errorWidget: (context, url, error) => Container(
                         width: 44,
                         height: 44,
-                        color: AppColors.surfaceCard,
-                        child: const Icon(Icons.music_note, color: AppColors.textMuted, size: 20),
+                        color: const Color(0xFF2C2C2C),
+                        child: const Icon(Icons.music_note, color: Colors.white54, size: 22),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  // Song title & artist
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          song.title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: AppTypography.titleSmall.copyWith(fontSize: 13),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          song.artist,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: AppTypography.bodySmall.copyWith(fontSize: 11),
-                        ),
-                      ],
-                    ),
-                  ),
-                  // Play/Pause button
-                  IconButton(
-                    iconSize: 28,
-                    color: AppColors.primary,
-                    icon: playerState.isBuffering
-                        ? const SizedBox(
-                            width: 22,
-                            height: 22,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              color: AppColors.primary,
-                            ),
-                          )
-                        : Icon(
-                            playerState.isPlaying
-                                ? Icons.pause_circle_filled_rounded
-                                : Icons.play_circle_filled_rounded,
-                            size: 32,
-                          ),
-                    onPressed: () {
-                      ref.read(audioPlayerProvider.notifier).playOrPause();
-                    },
-                  ),
-                  // Close button
-                  IconButton(
-                    iconSize: 20,
-                    color: AppColors.textMuted,
-                    icon: const Icon(Icons.close_rounded),
-                    onPressed: () {
-                      ref.read(audioPlayerProvider.notifier).closePlayer();
-                    },
-                  ),
                 ],
+              ),
+            ),
+
+            // Thin progress line at the very bottom
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: LinearProgressIndicator(
+                value: progress,
+                backgroundColor: const Color(0x22FFFFFF),
+                valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                minHeight: 2.0,
               ),
             ),
           ],

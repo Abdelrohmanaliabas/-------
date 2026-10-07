@@ -133,3 +133,15 @@ class QueueBottomSheet extends ConsumerWidget {
     );
   }
 }
+
+void showQueueBottomSheet(BuildContext context) {
+  showModalBottomSheet(
+    context: context,
+    backgroundColor: Colors.transparent,
+    isScrollControlled: true,
+    builder: (_) => const FractionallySizedBox(
+      heightFactor: 0.75,
+      child: QueueBottomSheet(),
+    ),
+  );
+}
