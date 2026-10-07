@@ -5,7 +5,6 @@ import 'package:mazikty/data/mock/sample_music_data.dart';
 import 'package:mazikty/domain/models/song.dart';
 import 'package:mazikty/presentation/providers/audio_player_provider.dart';
 import 'package:mazikty/presentation/providers/music_providers.dart';
-import 'package:mazikty/presentation/widgets/song_tile.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   final VoidCallback? onSearchTap;
@@ -20,6 +19,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   String _selectedMood = 'الكل';
   int _quickPlayPageIndex = 0;
   final PageController _quickPlayPageController = PageController();
+  int _quickPicksPageIndex = 0;
+  final PageController _quickPicksPageController = PageController(viewportFraction: 0.94);
 
   final List<String> _moods = [
     'استرخاء',
@@ -34,19 +35,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   void dispose() {
     _quickPlayPageController.dispose();
+    _quickPicksPageController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final recentAsync = ref.watch(recentlyPlayedSongsProvider);
     final recommendedAsync = ref.watch(recommendedSongsProvider);
     final popularAsync = ref.watch(popularSongsProvider);
 
     final allPopular = popularAsync.value ?? SampleMusicData.songs;
-    final allRecent = recentAsync.value?.isNotEmpty == true
-        ? recentAsync.value!
-        : SampleMusicData.songs;
     final allRecommended = recommendedAsync.value ?? SampleMusicData.songs;
 
     // Filter by mood if selected
@@ -287,7 +285,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
               const SliverToBoxAdapter(child: SizedBox(height: 24)),
 
-              // Section 2: "اختيارات سريعة" (Quick picks)
+              // Section 2: "اختيارات سريعة" (Quick picks - 5 horizontal pages of trending songs)
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -305,8 +303,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       // "تشغيل الكل" pill button
                       GestureDetector(
                         onTap: () {
-                          if (allRecent.isNotEmpty) {
-                            ref.read(audioPlayerProvider.notifier).playPlaylist(allRecent, initialIndex: 0);
+                          final picks = <Song>[...allPopular];
+                          if (picks.length < 20) picks.addAll(SampleMusicData.songs);
+                          final fullList = picks.take(20).toList();
+                          if (fullList.isNotEmpty) {
+                            ref.read(audioPlayerProvider.notifier).playPlaylist(fullList, initialIndex: 0);
                           }
                         },
                         child: Container(
@@ -333,19 +334,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
               const SliverToBoxAdapter(child: SizedBox(height: 10)),
 
-              // Items for "اختيارات سريعة"
-              SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    final song = allRecent[index];
-                    return SongTile(
-                      song: song,
-                      playlist: allRecent,
-                      index: index,
-                    );
-                  },
-                  childCount: allRecent.length.clamp(0, 5),
-                ),
+              // Horizontal 5-page carousel for "اختيارات سريعة" (4 songs per page = 20 trending songs)
+              SliverToBoxAdapter(
+                child: _buildQuickPicksHorizontalSection(allPopular),
               ),
 
               const SliverToBoxAdapter(child: SizedBox(height: 28)),
@@ -564,6 +555,187 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         color: isActive ? Colors.white : const Color(0xFF666666),
         shape: BoxShape.circle,
       ),
+    );
+  }
+
+  Widget _buildQuickPicksHorizontalSection(List<Song> allPopular) {
+    final picks = <Song>[...allPopular];
+    if (picks.length < 20) {
+      picks.addAll(SampleMusicData.songs);
+    }
+    final fullList = picks.take(20).toList();
+
+    return Column(
+      children: [
+        SizedBox(
+          height: 256,
+          child: PageView.builder(
+            controller: _quickPicksPageController,
+            itemCount: 5, // Exactly 5 horizontal swipe pages requested by user
+            onPageChanged: (idx) {
+              setState(() {
+                _quickPicksPageIndex = idx;
+              });
+            },
+            itemBuilder: (context, page) {
+              final pageItems = fullList.skip(page * 4).take(4).toList();
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: List.generate(pageItems.length, (i) {
+                    final song = pageItems[i];
+                    final overallIndex = page * 4 + i;
+                    return _buildQuickPickRow(song, fullList, overallIndex);
+                  }),
+                ),
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 10),
+        // 5-dot page indicator for the 5 horizontal screens
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(5, (index) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 3),
+              child: _buildDotIndicator(_quickPicksPageIndex == index),
+            );
+          }),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildQuickPickRow(Song song, List<Song> playlist, int index) {
+    return InkWell(
+      onTap: () {
+        ref.read(audioPlayerProvider.notifier).playPlaylist(playlist, initialIndex: index);
+      },
+      borderRadius: BorderRadius.circular(10),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+        child: Row(
+          children: [
+            // Artwork (rounded 48x48)
+            ClipRRect(
+              borderRadius: BorderRadius.circular(6),
+              child: CachedNetworkImage(
+                imageUrl: song.artworkUrl,
+                width: 48,
+                height: 48,
+                fit: BoxFit.cover,
+                placeholder: (context, url) => Container(
+                  width: 48,
+                  height: 48,
+                  color: const Color(0xFF242424),
+                  child: const Icon(Icons.music_note, color: Colors.white24, size: 22),
+                ),
+                errorWidget: (context, url, error) => Container(
+                  width: 48,
+                  height: 48,
+                  color: const Color(0xFF242424),
+                  child: const Icon(Icons.music_note, color: Colors.white24, size: 22),
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+
+            // Song Title and Artist info
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    song.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    '${song.artist} • ${song.album.isNotEmpty ? song.album : "أفضل التريندات"}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Color(0xFFAAAAAA),
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // 3-dots more menu
+            IconButton(
+              icon: const Icon(Icons.more_vert_rounded, color: Color(0xFFB3B3B3), size: 20),
+              onPressed: () {
+                _showSongModal(context, song);
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showSongModal(BuildContext context, Song song) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: const Color(0xFF212121),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Wrap(
+            children: [
+              ListTile(
+                leading: ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: CachedNetworkImage(
+                    imageUrl: song.artworkUrl,
+                    width: 44,
+                    height: 44,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                title: Text(song.title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                subtitle: Text(song.artist, style: const TextStyle(color: Colors.white70)),
+              ),
+              const Divider(color: Color(0xFF333333)),
+              ListTile(
+                leading: const Icon(Icons.queue_music_rounded, color: Colors.white),
+                title: const Text('تشغيل التالي', style: TextStyle(color: Colors.white)),
+                onTap: () {
+                  ref.read(audioPlayerProvider.notifier).addToQueue(song);
+                  Navigator.pop(ctx);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.playlist_add_rounded, color: Colors.white),
+                title: const Text('إضافة إلى قائمة تشغيل', style: TextStyle(color: Colors.white)),
+                onTap: () {
+                  Navigator.pop(ctx);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.share_rounded, color: Colors.white),
+                title: const Text('مشاركة', style: TextStyle(color: Colors.white)),
+                onTap: () {
+                  Navigator.pop(ctx);
+                },
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

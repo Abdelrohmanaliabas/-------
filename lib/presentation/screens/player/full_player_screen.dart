@@ -188,7 +188,7 @@ class _FullPlayerScreenState extends ConsumerState<FullPlayerScreen> {
 
             const Spacer(flex: 1),
 
-            // Song Info: Title (with expand arrow) and Artist
+            // Song Info: Title and Artist
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Row(
@@ -199,26 +199,15 @@ class _FullPlayerScreenState extends ConsumerState<FullPlayerScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                song.title,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                            const Icon(
-                              Icons.keyboard_arrow_left_rounded,
-                              color: Colors.white70,
-                              size: 26,
-                            ),
-                          ],
+                        Text(
+                          song.title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 22,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
                         const SizedBox(height: 4),
                         Text(
@@ -312,160 +301,172 @@ class _FullPlayerScreenState extends ConsumerState<FullPlayerScreen> {
 
             const SizedBox(height: 14),
 
-            // Progress Slider & Timestamps
+            // Progress Slider & Timestamps (Strictly LTR: 00:00 on left, total on right, slider left to right)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Column(
-                children: [
-                  SliderTheme(
-                    data: SliderTheme.of(context).copyWith(
-                      trackHeight: 3.5,
-                      thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6.5),
-                      overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
-                      activeTrackColor: Colors.white,
-                      inactiveTrackColor: const Color(0x33FFFFFF),
-                      thumbColor: Colors.white,
+              child: Directionality(
+                textDirection: TextDirection.ltr,
+                child: Column(
+                  children: [
+                    SliderTheme(
+                      data: SliderTheme.of(context).copyWith(
+                        trackHeight: 3.5,
+                        thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 6.5),
+                        overlayShape: const RoundSliderOverlayShape(overlayRadius: 14),
+                        activeTrackColor: Colors.white,
+                        inactiveTrackColor: const Color(0x33FFFFFF),
+                        thumbColor: Colors.white,
+                      ),
+                      child: Slider(
+                        min: 0.0,
+                        max: maxMs > 0 ? maxMs : 1.0,
+                        value: currentMs,
+                        onChanged: (val) {
+                          setState(() {
+                            _dragValue = val;
+                          });
+                        },
+                        onChangeEnd: (val) {
+                          ref.read(audioPlayerProvider.notifier).seek(
+                                Duration(milliseconds: val.round()),
+                              );
+                          setState(() {
+                            _dragValue = null;
+                          });
+                        },
+                      ),
                     ),
-                    child: Slider(
-                      min: 0.0,
-                      max: maxMs > 0 ? maxMs : 1.0,
-                      value: currentMs,
-                      onChanged: (val) {
-                        setState(() {
-                          _dragValue = val;
-                        });
-                      },
-                      onChangeEnd: (val) {
-                        ref.read(audioPlayerProvider.notifier).seek(
-                              Duration(milliseconds: val.round()),
-                            );
-                        setState(() {
-                          _dragValue = null;
-                        });
-                      },
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 10),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          Formatters.formatDuration(
-                            _dragValue != null
-                                ? Duration(milliseconds: _dragValue!.round())
-                                : position,
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 10),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            Formatters.formatDuration(
+                              _dragValue != null
+                                  ? Duration(milliseconds: _dragValue!.round())
+                                  : position,
+                            ),
+                            style: const TextStyle(color: Color(0xFFAAAAAA), fontSize: 12),
                           ),
-                          style: const TextStyle(color: Color(0xFFAAAAAA), fontSize: 12),
-                        ),
-                        Text(
-                          Formatters.formatDuration(duration),
-                          style: const TextStyle(color: Color(0xFFAAAAAA), fontSize: 12),
-                        ),
-                      ],
+                          Text(
+                            Formatters.formatDuration(duration),
+                            style: const TextStyle(color: Color(0xFFAAAAAA), fontSize: 12),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
 
             const SizedBox(height: 12),
 
-            // Player Controls: Shuffle, Previous, Big White Play/Pause, Next, Repeat
+            // Player Controls: Shuffle, Previous, Big White Play/Pause, Next, Repeat (Strictly LTR)
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  // Shuffle Icon
-                  IconButton(
-                    icon: Icon(
-                      Icons.shuffle_rounded,
-                      color: playerState.isShuffleEnabled ? Colors.white : const Color(0xFF777777),
-                      size: 26,
-                    ),
-                    onPressed: () {
-                      ref.read(audioPlayerProvider.notifier).toggleShuffle();
-                    },
-                  ),
-
-                  // Previous Track
-                  IconButton(
-                    icon: const Icon(
-                      Icons.skip_previous_rounded,
-                      color: Colors.white,
-                      size: 40,
-                    ),
-                    onPressed: () {
-                      ref.read(audioPlayerProvider.notifier).previous();
-                    },
-                  ),
-
-                  // Big White Circular Play/Pause Button
-                  GestureDetector(
-                    onTap: () {
-                      ref.read(audioPlayerProvider.notifier).playOrPause();
-                    },
-                    child: Container(
-                      width: 76,
-                      height: 76,
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.white,
-                        boxShadow: [
-                          BoxShadow(
-                            color: Color(0x33000000),
-                            blurRadius: 16,
-                            offset: Offset(0, 4),
-                          ),
-                        ],
+              child: Directionality(
+                textDirection: TextDirection.ltr,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // Shuffle Icon (Far Left)
+                    IconButton(
+                      icon: Icon(
+                        Icons.shuffle_rounded,
+                        color: playerState.isShuffleEnabled ? Colors.white : const Color(0xFF777777),
+                        size: 26,
                       ),
-                      child: playerState.isBuffering
-                          ? const Padding(
-                              padding: EdgeInsets.all(24),
-                              child: CircularProgressIndicator(
-                                color: Colors.black,
-                                strokeWidth: 3,
+                      onPressed: () {
+                        ref.read(audioPlayerProvider.notifier).toggleShuffle();
+                      },
+                    ),
+
+                    // Previous Track (|<< pointing left)
+                    IconButton(
+                      icon: const Icon(
+                        Icons.skip_previous_rounded,
+                        color: Colors.white,
+                        size: 42,
+                      ),
+                      onPressed: () {
+                        ref.read(audioPlayerProvider.notifier).previous();
+                      },
+                    ),
+
+                    // Big White Circular Play/Pause Button (Center)
+                    GestureDetector(
+                      onTap: () {
+                        ref.read(audioPlayerProvider.notifier).playOrPause();
+                      },
+                      child: Container(
+                        width: 76,
+                        height: 76,
+                        decoration: const BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Color(0x33000000),
+                              blurRadius: 16,
+                              offset: Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Stack(
+                          alignment: Alignment.center,
+                          children: [
+                            if (playerState.isBuffering && !playerState.isPlaying)
+                              const SizedBox(
+                                width: 50,
+                                height: 50,
+                                child: CircularProgressIndicator(
+                                  color: Colors.black45,
+                                  strokeWidth: 3,
+                                ),
                               ),
-                            )
-                          : Icon(
+                            Icon(
                               playerState.isPlaying
                                   ? Icons.pause_rounded
                                   : Icons.play_arrow_rounded,
                               color: Colors.black,
-                              size: 44,
+                              size: 46,
                             ),
+                          ],
+                        ),
+                      ),
                     ),
-                  ),
 
-                  // Next Track
-                  IconButton(
-                    icon: const Icon(
-                      Icons.skip_next_rounded,
-                      color: Colors.white,
-                      size: 40,
+                    // Next Track (>>| pointing right)
+                    IconButton(
+                      icon: const Icon(
+                        Icons.skip_next_rounded,
+                        color: Colors.white,
+                        size: 42,
+                      ),
+                      onPressed: () {
+                        ref.read(audioPlayerProvider.notifier).next();
+                      },
                     ),
-                    onPressed: () {
-                      ref.read(audioPlayerProvider.notifier).next();
-                    },
-                  ),
 
-                  // Repeat / Loop Mode
-                  IconButton(
-                    icon: Icon(
-                      playerState.loopMode == LoopMode.one
-                          ? Icons.repeat_one_rounded
-                          : Icons.repeat_rounded,
-                      color: playerState.loopMode != LoopMode.off
-                          ? Colors.white
-                          : const Color(0xFF777777),
-                      size: 26,
+                    // Repeat / Loop Mode (Far Right)
+                    IconButton(
+                      icon: Icon(
+                        playerState.loopMode == LoopMode.one
+                            ? Icons.repeat_one_rounded
+                            : Icons.repeat_rounded,
+                        color: playerState.loopMode != LoopMode.off
+                            ? Colors.white
+                            : const Color(0xFF777777),
+                        size: 26,
+                      ),
+                      onPressed: () {
+                        ref.read(audioPlayerProvider.notifier).toggleLoopMode();
+                      },
                     ),
-                    onPressed: () {
-                      ref.read(audioPlayerProvider.notifier).toggleLoopMode();
-                    },
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
 

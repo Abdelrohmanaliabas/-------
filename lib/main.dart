@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -6,7 +7,16 @@ import 'package:just_audio_background/just_audio_background.dart';
 import 'core/constants/app_theme.dart';
 import 'presentation/screens/main_scaffold_screen.dart';
 
+class MaziktyHttpOverrides extends HttpOverrides {
+  @override
+  HttpClient createHttpClient(SecurityContext? context) {
+    return super.createHttpClient(context)
+      ..badCertificateCallback = (X509Certificate cert, String host, int port) => true;
+  }
+}
+
 void main() async {
+  HttpOverrides.global = MaziktyHttpOverrides();
   WidgetsFlutterBinding.ensureInitialized();
 
   // Set immersive dark status & navigation bar
