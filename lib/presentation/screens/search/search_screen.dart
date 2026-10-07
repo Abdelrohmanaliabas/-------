@@ -3,12 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mazikty/core/constants/app_colors.dart';
 import 'package:mazikty/core/constants/app_typography.dart';
+import 'package:mazikty/domain/models/playlist.dart';
+import 'package:mazikty/presentation/providers/audio_player_provider.dart';
+import 'package:mazikty/presentation/providers/favorites_provider.dart';
 import 'package:mazikty/presentation/providers/search_provider.dart';
+import 'package:mazikty/presentation/screens/playlists/playlist_detail_screen.dart';
 import 'package:mazikty/presentation/widgets/artist_avatar.dart';
 import 'package:mazikty/presentation/widgets/empty_state_view.dart';
 import 'package:mazikty/presentation/widgets/section_header.dart';
 import 'package:mazikty/presentation/widgets/song_tile.dart';
-import 'package:mazikty/presentation/providers/audio_player_provider.dart';
 
 class SearchScreen extends ConsumerStatefulWidget {
   const SearchScreen({super.key});
@@ -48,7 +51,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               },
               style: AppTypography.bodyLarge,
               decoration: InputDecoration(
-                hintText: 'ابحث عن أغنية، فنان، ألبوم أو مقام...',
+                hintText: 'ابحث عن أغنية، فنان، ألبوم أو بلايليست (جيم، عربي، أجنبي)...',
                 prefixIcon: const Icon(Icons.search_rounded, color: AppColors.primary),
                 suffixIcon: query.isNotEmpty
                     ? IconButton(
@@ -71,6 +74,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
               child: Row(
                 children: [
                   _buildFilterChip('الكل', SearchFilter.all, activeFilter),
+                  _buildFilterChip('بلايليست', SearchFilter.playlists, activeFilter),
                   _buildFilterChip('أغاني', SearchFilter.songs, activeFilter),
                   _buildFilterChip('فنانين', SearchFilter.artists, activeFilter),
                   _buildFilterChip('ألبومات', SearchFilter.albums, activeFilter),
@@ -119,18 +123,18 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
   Widget _buildEmptyOrSuggestionsView() {
     final suggestions = [
-      'عود البطل',
+      'أغاني جيم عربي',
+      'Workout & Gym Hits',
+      'مهرجانات',
+      'رومانسيات عربية',
+      'Morning Vibes',
+      'كلاسيكيات عربية',
+      'Chill & Relax',
+      'Pop Hits 2024',
       'عمرو دياب',
-      'بنت الجيران',
       'شيرين',
-      'الغزالة رايقة',
-      'سطلانة',
-      'أحمد سعد',
-      'ويجز',
-      'نصير شمة',
       'عمر خيرت',
-      'فيروز',
-      'أم كلثوم',
+      'ويجز',
     ];
 
     return ListView(
@@ -176,8 +180,8 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
         const SizedBox(height: 40),
         const EmptyStateView(
           icon: Icons.search_rounded,
-          title: 'ابحث في ملايين الأغاني والمهرجانات',
-          message: 'محرك بحث فائق يبحث عبر أكثر من 15 مصدراً وقاعدة بيانات موسيقية عالمية وعربية لتجد أي أغنية فوراً.',
+          title: 'ابحث في ملايين الأغاني وقوائم التشغيل',
+          message: 'ابحث عن قوائم تشغيل جاهزة (جيم، عربي، أجنبي) وأضفها بالكامل للمفضلة بضغطة واحدة!',
         ),
       ],
     );
@@ -192,6 +196,7 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
       );
     }
 
+    final showPlaylists = filter == SearchFilter.all || filter == SearchFilter.playlists;
     final showSongs = filter == SearchFilter.all || filter == SearchFilter.songs;
     final showArtists = filter == SearchFilter.all || filter == SearchFilter.artists;
     final showAlbums = filter == SearchFilter.all || filter == SearchFilter.albums;
@@ -199,6 +204,17 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     return ListView(
       padding: const EdgeInsets.only(bottom: 100),
       children: [
+        // Playlists Section
+        if (showPlaylists && results.playlists.isNotEmpty) ...[
+          SectionHeader(
+            title: 'قوائم التشغيل (${results.playlists.length})',
+            actionText: null,
+          ),
+          const SizedBox(height: 4),
+          ...results.playlists.map((playlist) => _buildPlaylistResultTile(playlist)),
+          const SizedBox(height: 16),
+        ],
+
         // Artists Section
         if (showArtists && results.artists.isNotEmpty) ...[
           const SectionHeader(title: 'الفنانون', actionText: null),
@@ -278,6 +294,228 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           }),
         ],
       ],
+    );
+  }
+
+  Widget _buildPlaylistResultTile(Playlist playlist) {
+    final favState = ref.watch(favoritesProvider);
+    final favIds = favState.value?.map((s) => s.id).toSet() ?? {};
+    final addedCount = playlist.songs.where((s) => favIds.contains(s.id)).length;
+    final allAdded = playlist.songs.isNotEmpty && addedCount == playlist.songs.length;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceLight,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: allAdded ? AppColors.primary.withValues(alpha: 0.4) : AppColors.divider,
+          width: allAdded ? 1.5 : 0.5,
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => PlaylistDetailScreen(playlist: playlist),
+              ),
+            );
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Row(
+              children: [
+                // Artwork
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: CachedNetworkImage(
+                    imageUrl: playlist.artworkUrl,
+                    width: 72,
+                    height: 72,
+                    fit: BoxFit.cover,
+                    errorWidget: (context, url, error) => Container(
+                      width: 72,
+                      height: 72,
+                      color: AppColors.surface,
+                      child: const Icon(Icons.queue_music, color: AppColors.textMuted),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 14),
+
+                // Info
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        playlist.name,
+                        style: AppTypography.titleSmall.copyWith(fontSize: 14),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (playlist.description != null) ...[
+                        const SizedBox(height: 3),
+                        Text(
+                          playlist.description!,
+                          style: AppTypography.bodySmall,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
+                          const Icon(Icons.music_note, size: 12, color: AppColors.textMuted),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${playlist.songs.length} أغنية',
+                            style: AppTypography.bodySmall.copyWith(fontSize: 11),
+                          ),
+                          if (addedCount > 0 && !allAdded) ...[
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(
+                                '$addedCount مضافة',
+                                style: AppTypography.bodySmall.copyWith(
+                                  fontSize: 10,
+                                  color: AppColors.primary,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 10),
+
+                // Add to Favorites Button
+                _buildAddToFavBtn(
+                  playlist: playlist,
+                  allAdded: allAdded,
+                  onTap: () => _addPlaylistToFavorites(playlist),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAddToFavBtn({
+    required Playlist playlist,
+    required bool allAdded,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: allAdded ? null : onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          gradient: allAdded
+              ? null
+              : const LinearGradient(
+                  colors: [AppColors.primary, AppColors.primaryDark],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+          color: allAdded ? AppColors.surface : null,
+          borderRadius: BorderRadius.circular(12),
+          border: allAdded
+              ? Border.all(color: AppColors.primary.withValues(alpha: 0.3))
+              : null,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              allAdded ? Icons.favorite : Icons.favorite_border,
+              size: 16,
+              color: allAdded ? AppColors.primary : Colors.black,
+            ),
+            const SizedBox(width: 5),
+            Text(
+              allAdded ? 'مضافة' : 'أضف للمفضلة',
+              style: AppTypography.labelMedium.copyWith(
+                color: allAdded ? AppColors.primary : Colors.black,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _addPlaylistToFavorites(Playlist playlist) async {
+    if (playlist.songs.isEmpty) {
+      _showSnackBar('هذه البلايليست فارغة', isError: true);
+      return;
+    }
+
+    try {
+      final count = await ref.read(favoritesProvider.notifier).addAllToFavorites(playlist.songs);
+      if (count == 0) {
+        _showSnackBar('كل أغاني "${playlist.name}" موجودة بالفعل في المفضلة ❤️');
+      } else {
+        _showSnackBar(
+          'تمت إضافة $count أغنية من "${playlist.name}" للمفضلة بنجاح ❤️',
+          isSuccess: true,
+        );
+      }
+    } catch (e) {
+      _showSnackBar('حدث خطأ، حاول مجدداً', isError: true);
+    }
+  }
+
+  void _showSnackBar(String message, {bool isError = false, bool isSuccess = false}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).clearSnackBars();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(
+              isError
+                  ? Icons.error_outline
+                  : isSuccess
+                      ? Icons.favorite
+                      : Icons.info_outline,
+              color: Colors.white,
+              size: 18,
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(message, style: const TextStyle(fontFamily: 'Cairo')),
+            ),
+          ],
+        ),
+        backgroundColor: isError
+            ? Colors.red.shade700
+            : isSuccess
+                ? Colors.green.shade700
+                : AppColors.surface,
+        behavior: SnackBarBehavior.floating,
+        margin: const EdgeInsets.all(16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        duration: const Duration(seconds: 3),
+      ),
     );
   }
 }

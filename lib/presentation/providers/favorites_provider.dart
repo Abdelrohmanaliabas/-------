@@ -71,6 +71,36 @@ class FavoritesNotifier extends StateNotifier<AsyncValue<List<Song>>> {
   bool isFavorite(String songId) {
     return state.value?.any((s) => s.id == songId) ?? false;
   }
+
+  /// Add all songs from a playlist to favorites at once
+  Future<int> addAllToFavorites(List<Song> songs) async {
+    final currentList = state.value ?? [];
+    final existingIds = currentList.map((s) => s.id).toSet();
+    final newSongs = songs.where((s) => !existingIds.contains(s.id)).toList();
+
+    if (newSongs.isEmpty) return 0;
+
+    // Optimistic update
+    final updated = [
+      ...newSongs.map((s) => s.copyWith(isFavorite: true)),
+      ...currentList,
+    ];
+    state = AsyncValue.data(updated);
+
+    // Persist each new song
+    int addedCount = 0;
+    for (final song in newSongs) {
+      try {
+        await _repository.toggleFavorite(song);
+        _autoCacheSongForOffline(song.copyWith(isFavorite: true));
+        addedCount++;
+      } catch (_) {
+        // Skip failed ones silently
+      }
+    }
+
+    return addedCount;
+  }
 }
 
 final favoritesProvider =

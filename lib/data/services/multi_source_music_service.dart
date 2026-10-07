@@ -1329,4 +1329,23 @@ class MultiSourceMusicApiService implements MusicApiService {
 
     return related;
   }
+
+  @override
+  Future<List<Playlist>> searchPlaylists(String rawQuery) async {
+    final query = rawQuery.trim().toLowerCase();
+    if (query.isEmpty) return [];
+
+    final allPlaylists = SampleMusicData.curatedPlaylists;
+
+    return allPlaylists.where((pl) {
+      final nameMatch = pl.name.toLowerCase().contains(query);
+      final descMatch = pl.description?.toLowerCase().contains(query) ?? false;
+      // Also match normalized Arabic
+      final normQuery = _normalizeArabic(rawQuery);
+      final normName = _normalizeArabic(pl.name);
+      final normDesc = _normalizeArabic(pl.description ?? '');
+      final normMatch = normName.contains(normQuery) || normDesc.contains(normQuery);
+      return nameMatch || descMatch || normMatch;
+    }).toList();
+  }
 }

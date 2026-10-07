@@ -18,6 +18,7 @@ abstract class MusicApiService {
   Future<List<Song>> searchSongs(String query);
   Future<List<Artist>> searchArtists(String query);
   Future<List<Album>> searchAlbums(String query);
+  Future<List<Playlist>> searchPlaylists(String query);
 
   Future<Song?> getSongById(String id);
   Future<Artist?> getArtistById(String id);
@@ -136,6 +137,17 @@ class MockMusicApiService implements MusicApiService {
     return SampleMusicData.albums.where((al) {
       return al.title.toLowerCase().contains(q) ||
           al.artist.toLowerCase().contains(q);
+    }).toList();
+  }
+
+  @override
+  Future<List<Playlist>> searchPlaylists(String query) async {
+    await _simulateDelay();
+    final q = query.trim().toLowerCase();
+    if (q.isEmpty) return [];
+    return SampleMusicData.curatedPlaylists.where((pl) {
+      return pl.name.toLowerCase().contains(q) ||
+          (pl.description?.toLowerCase().contains(q) ?? false);
     }).toList();
   }
 

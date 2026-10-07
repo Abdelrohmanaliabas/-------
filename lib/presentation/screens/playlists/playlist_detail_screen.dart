@@ -6,6 +6,7 @@ import 'package:mazikty/core/constants/app_typography.dart';
 import 'package:mazikty/core/utils/formatters.dart';
 import 'package:mazikty/domain/models/playlist.dart';
 import 'package:mazikty/presentation/providers/audio_player_provider.dart';
+import 'package:mazikty/presentation/providers/favorites_provider.dart';
 import 'package:mazikty/presentation/providers/playlists_provider.dart';
 import 'package:mazikty/presentation/widgets/empty_state_view.dart';
 import 'package:mazikty/presentation/widgets/song_tile.dart';
@@ -166,6 +167,48 @@ class PlaylistDetailScreen extends ConsumerWidget {
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
+                      ),
+                      const SizedBox(width: 8),
+                      Builder(
+                        builder: (context) {
+                          final favState = ref.watch(favoritesProvider);
+                          final favIds = favState.value?.map((s) => s.id).toSet() ?? {};
+                          final allInFav = songs.isNotEmpty && songs.every((s) => favIds.contains(s.id));
+
+                          return IconButton.filledTonal(
+                            onPressed: songs.isEmpty
+                                ? null
+                                : () async {
+                                    final count = await ref
+                                        .read(favoritesProvider.notifier)
+                                        .addAllToFavorites(songs);
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                            count > 0
+                                                ? 'تمت إضافة $count أغنية إلى المفضلة ❤️'
+                                                : 'جميع أغاني هذه القائمة موجودة بالفعل في المفضلة ❤️',
+                                            style: const TextStyle(fontFamily: 'Cairo'),
+                                          ),
+                                          backgroundColor: AppColors.surface,
+                                          behavior: SnackBarBehavior.floating,
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                        ),
+                                      );
+                                    }
+                                  },
+                            style: IconButton.styleFrom(
+                              backgroundColor: allInFav ? AppColors.primary.withValues(alpha: 0.2) : AppColors.surfaceLight,
+                              side: BorderSide(color: allInFav ? AppColors.primary : AppColors.divider),
+                            ),
+                            icon: Icon(
+                              allInFav ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                              color: AppColors.primary,
+                            ),
+                            tooltip: allInFav ? 'جميع الأغاني في المفضلة' : 'إضافة جميع الأغاني للمفضلة',
+                          );
+                        },
                       ),
                     ],
                   ),

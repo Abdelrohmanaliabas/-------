@@ -19,4 +19,21 @@ void main() {
     expect(results.isNotEmpty, isTrue);
     expect(results.any((s) => s.id.startsWith('yt_') || s.duration.inMinutes >= 2), isTrue);
   });
+
+  test('Search for gym playlists returns Arabic and English workout playlists', () async {
+    final service = MultiSourceMusicApiService();
+    
+    // Arabic search
+    final gymArabic = await service.searchPlaylists('جيم');
+    expect(gymArabic.isNotEmpty, isTrue);
+    expect(gymArabic.any((pl) => pl.name.contains('جيم')), isTrue);
+    expect(gymArabic.first.songs.isNotEmpty, isTrue);
+
+    // English search
+    final gymEnglish = await service.searchPlaylists('workout');
+    expect(gymEnglish.isNotEmpty, isTrue);
+    expect(gymEnglish.any((pl) => pl.name.toLowerCase().contains('workout')), isTrue);
+    expect(gymEnglish.first.songs.isNotEmpty, isTrue);
+  });
 }
+

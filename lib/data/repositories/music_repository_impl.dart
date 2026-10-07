@@ -90,6 +90,11 @@ class MusicRepositoryImpl implements MusicRepository {
   }
 
   @override
+  Future<List<Playlist>> searchPlaylists(String query) {
+    return _apiService.searchPlaylists(query);
+  }
+
+  @override
   Future<Song?> getSongById(String id) async {
     final song = await _apiService.getSongById(id);
     if (song == null) return null;

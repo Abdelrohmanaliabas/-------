@@ -17,6 +17,7 @@ abstract class MusicRepository {
   Future<List<Song>> searchSongs(String query);
   Future<List<Artist>> searchArtists(String query);
   Future<List<Album>> searchAlbums(String query);
+  Future<List<Playlist>> searchPlaylists(String query);
   
   Future<Song?> getSongById(String id);
   Future<Artist?> getArtistById(String id);

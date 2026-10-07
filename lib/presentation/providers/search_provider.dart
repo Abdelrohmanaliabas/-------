@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../domain/models/album.dart';
 import '../../domain/models/artist.dart';
+import '../../domain/models/playlist.dart';
 import '../../domain/models/song.dart';
 import 'service_providers.dart';
 
@@ -9,6 +10,7 @@ enum SearchFilter {
   songs,
   artists,
   albums,
+  playlists,
 }
 
 class SearchResults {
@@ -16,6 +18,7 @@ class SearchResults {
   final List<Song> songs;
   final List<Artist> artists;
   final List<Album> albums;
+  final List<Playlist> playlists;
   final bool isLoading;
   final String? error;
 
@@ -24,12 +27,24 @@ class SearchResults {
     this.songs = const [],
     this.artists = const [],
     this.albums = const [],
+    this.playlists = const [],
     this.isLoading = false,
     this.error,
   });
 
-  bool get isEmpty => !isLoading && query.isNotEmpty && songs.isEmpty && artists.isEmpty && albums.isEmpty;
-  bool get hasContent => songs.isNotEmpty || artists.isNotEmpty || albums.isNotEmpty;
+  bool get isEmpty =>
+      !isLoading &&
+      query.isNotEmpty &&
+      songs.isEmpty &&
+      artists.isEmpty &&
+      albums.isEmpty &&
+      playlists.isEmpty;
+
+  bool get hasContent =>
+      songs.isNotEmpty ||
+      artists.isNotEmpty ||
+      albums.isNotEmpty ||
+      playlists.isNotEmpty;
 }
 
 final searchQueryProvider = StateProvider<String>((ref) => '');
@@ -49,6 +64,7 @@ final searchResultsProvider = FutureProvider.autoDispose<SearchResults>((ref) as
       repo.searchSongs(query),
       repo.searchArtists(query),
       repo.searchAlbums(query),
+      repo.searchPlaylists(query),
     ]);
 
     return SearchResults(
@@ -56,6 +72,7 @@ final searchResultsProvider = FutureProvider.autoDispose<SearchResults>((ref) as
       songs: results[0] as List<Song>,
       artists: results[1] as List<Artist>,
       albums: results[2] as List<Album>,
+      playlists: results[3] as List<Playlist>,
       isLoading: false,
     );
   } catch (e) {
@@ -66,3 +83,4 @@ final searchResultsProvider = FutureProvider.autoDispose<SearchResults>((ref) as
     );
   }
 });
+
