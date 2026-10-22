@@ -207,40 +207,7 @@ class SongAudioResolver {
       }
     }
 
-    // 4. Resolve FULL SONG via SoundCloud (100% full song, 3-5 minutes, direct CloudFront MP3)
-    final scInfo = await _resolveSoundCloudTrack(cleanTitle, cleanArtist);
-    if (scInfo != null) {
-      _cache[cacheKey] = _CachedStream(
-        url: scInfo.url,
-        duration: scInfo.duration ?? song.duration,
-        cachedAt: DateTime.now(),
-        source: 'soundcloud_full',
-      );
-      debugPrint('☁️ SoundCloud FULL song resolved for "${song.title}" (${scInfo.duration?.inMinutes}:${((scInfo.duration?.inSeconds ?? 0) % 60).toString().padLeft(2, '0')}): ${scInfo.url}');
-      return scInfo;
-    }
-
-    // 5. Fast iTunes Search preview fallback (~150ms)
-    if (!forceFresh && !isFallback && !song.id.startsWith('yt_')) {
-      final iTunesUrl = await _searchITunesPreview(cleanTitle, cleanArtist);
-      if (iTunesUrl != null && iTunesUrl.isNotEmpty) {
-        final result = ResolvedAudioInfo(
-          url: iTunesUrl,
-          duration: song.duration,
-          source: 'itunes_cdn',
-        );
-        _cache[cacheKey] = _CachedStream(
-          url: iTunesUrl,
-          duration: song.duration,
-          cachedAt: DateTime.now(),
-          source: 'itunes_cdn',
-        );
-        debugPrint('🍎 iTunes CDN resolved for "${song.title}": $iTunesUrl');
-        return result;
-      }
-    }
-
-    // 5. Direct YouTube Video ID (songs with yt_ prefix) - skip on fallback
+    // 4. Direct YouTube Video ID (songs with yt_ prefix) - instant direct resolution
     if (!forceFresh && !isFallback && song.id.startsWith('yt_')) {
       final videoIdStr = song.id.substring(3);
       try {
@@ -262,6 +229,39 @@ class SongAudioResolver {
         return result;
       } catch (e) {
         debugPrint('Invalid yt_ video ID "$videoIdStr": $e');
+      }
+    }
+
+    // 5. Resolve FULL SONG via SoundCloud (100% full song, 3-5 minutes, direct CloudFront MP3)
+    final scInfo = await _resolveSoundCloudTrack(cleanTitle, cleanArtist);
+    if (scInfo != null) {
+      _cache[cacheKey] = _CachedStream(
+        url: scInfo.url,
+        duration: scInfo.duration ?? song.duration,
+        cachedAt: DateTime.now(),
+        source: 'soundcloud_full',
+      );
+      debugPrint('☁️ SoundCloud FULL song resolved for "${song.title}" (${scInfo.duration?.inMinutes}:${((scInfo.duration?.inSeconds ?? 0) % 60).toString().padLeft(2, '0')}): ${scInfo.url}');
+      return scInfo;
+    }
+
+    // 6. Fast iTunes Search preview fallback (~150ms)
+    if (!forceFresh && !isFallback && !song.id.startsWith('yt_')) {
+      final iTunesUrl = await _searchITunesPreview(cleanTitle, cleanArtist);
+      if (iTunesUrl != null && iTunesUrl.isNotEmpty) {
+        final result = ResolvedAudioInfo(
+          url: iTunesUrl,
+          duration: song.duration,
+          source: 'itunes_cdn',
+        );
+        _cache[cacheKey] = _CachedStream(
+          url: iTunesUrl,
+          duration: song.duration,
+          cachedAt: DateTime.now(),
+          source: 'itunes_cdn',
+        );
+        debugPrint('🍎 iTunes CDN resolved for "${song.title}": $iTunesUrl');
+        return result;
       }
     }
 

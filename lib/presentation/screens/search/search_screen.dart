@@ -71,13 +71,17 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                     Expanded(
                       child: TextField(
                         controller: _searchController,
+                        textInputAction: TextInputAction.search,
                         onChanged: (val) {
+                          ref.read(searchQueryProvider.notifier).state = val;
+                        },
+                        onSubmitted: (val) {
                           ref.read(searchQueryProvider.notifier).state = val;
                         },
                         style: const TextStyle(color: Colors.white, fontSize: 16),
                         decoration: const InputDecoration(
-                          hintText: 'بحث في مازيكتي...',
-                          hintStyle: TextStyle(color: Color(0xFF888888), fontSize: 15),
+                          hintText: 'ابحث عن أي أغنية، فنان، أو رابط يوتيوب...',
+                          hintStyle: TextStyle(color: Color(0xFF888888), fontSize: 14),
                           border: InputBorder.none,
                           enabledBorder: InputBorder.none,
                           focusedBorder: InputBorder.none,
@@ -114,6 +118,10 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 ),
               ),
             ),
+
+            // Live Google / YouTube Search Suggestions Bar (when typing)
+            if (query.isNotEmpty)
+              _buildLiveSuggestionsBar(query),
 
             // Horizontal Filter Chips
             SingleChildScrollView(
@@ -182,6 +190,41 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
     );
   }
 
+  Widget _buildLiveSuggestionsBar(String query) {
+    final suggestionsAsync = ref.watch(searchSuggestionsProvider(query));
+    return suggestionsAsync.when(
+      data: (suggestions) {
+        if (suggestions.isEmpty) return const SizedBox.shrink();
+        return Container(
+          height: 38,
+          margin: const EdgeInsets.only(bottom: 6),
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            itemCount: suggestions.length,
+            separatorBuilder: (_, _) => const SizedBox(width: 8),
+            itemBuilder: (context, idx) {
+              final s = suggestions[idx];
+              return ActionChip(
+                backgroundColor: const Color(0xFF222222),
+                side: const BorderSide(color: Color(0xFF383838), width: 0.8),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                avatar: const Icon(Icons.search_rounded, color: Colors.white70, size: 14),
+                label: Text(s, style: const TextStyle(color: Colors.white, fontSize: 12)),
+                onPressed: () {
+                  _searchController.text = s;
+                  ref.read(searchQueryProvider.notifier).state = s;
+                },
+              );
+            },
+          ),
+        );
+      },
+      loading: () => const SizedBox.shrink(),
+      error: (_, _) => const SizedBox.shrink(),
+    );
+  }
+
   Widget _buildSuggestionsView() {
     final suggestions = [
       'اغاني جيم',
@@ -222,16 +265,39 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
 
   Widget _buildYouTubeMusicResultsView(SearchResults results) {
     if (results.isEmpty) {
-      return const Center(
-        child: Text(
-          'لم يتم العثور على نتائج مطابقة',
-          style: TextStyle(color: Color(0xFF888888), fontSize: 15),
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: const [
+              Icon(Icons.search_off_rounded, color: Color(0xFF666666), size: 48),
+              SizedBox(height: 12),
+              Text(
+                'لم يتم العثور على نتائج مطابقة',
+                style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 6),
+              Text(
+                'يمكنك البحث باسم الأغنية أو الفنان أو لصق رابط فيديو يوتيوب مباشرة.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Color(0xFF888888), fontSize: 13),
+              ),
+            ],
+          ),
         ),
       );
     }
 
-    final topSong = results.songs.isNotEmpty ? results.songs.first : null;
-    final otherSongs = results.songs.isNotEmpty ? results.songs.skip(1).toList() : <Song>[];
+    final songsToShow = (_selectedChipIndex >= 2)
+        ? <Song>[]
+        : results.songs;
+    final playlistsToShow = (_selectedChipIndex == 0)
+        ? <Playlist>[]
+        : results.playlists;
+
+    final topSong = songsToShow.isNotEmpty ? songsToShow.first : null;
+    final otherSongs = songsToShow.isNotEmpty ? songsToShow.skip(1).toList() : <Song>[];
 
     return ListView(
       padding: const EdgeInsets.only(bottom: 100),
@@ -373,14 +439,14 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
           ),
 
         // Playlists matching results
-        if (results.playlists.isNotEmpty)
-          ...results.playlists.map((playlist) => _buildPlaylistTile(playlist)),
+        if (playlistsToShow.isNotEmpty)
+          ...playlistsToShow.map((playlist) => _buildPlaylistTile(playlist)),
 
         // Other matching songs
         ...otherSongs.map((song) {
           return SongTile(
             song: song,
-            playlist: results.songs,
+            playlist: songsToShow,
           );
         }),
       ],

@@ -4,6 +4,7 @@ import '../../domain/models/artist.dart';
 import '../../domain/models/playlist.dart';
 import '../../domain/models/song.dart';
 import 'service_providers.dart';
+import '../../data/services/multi_source_music_service.dart';
 
 enum SearchFilter {
   all,
@@ -51,9 +52,27 @@ final searchQueryProvider = StateProvider<String>((ref) => '');
 
 final searchFilterProvider = StateProvider<SearchFilter>((ref) => SearchFilter.all);
 
+final searchSuggestionsProvider = FutureProvider.autoDispose.family<List<String>, String>((ref, query) async {
+  final q = query.trim();
+  if (q.isEmpty) return const [];
+  var didDispose = false;
+  ref.onDispose(() => didDispose = true);
+  await Future.delayed(const Duration(milliseconds: 200));
+  if (didDispose) return const [];
+  return MultiSourceMusicApiService.fetchGoogleYouTubeSuggestions(q);
+});
+
 final searchResultsProvider = FutureProvider.autoDispose<SearchResults>((ref) async {
   final query = ref.watch(searchQueryProvider).trim();
   if (query.isEmpty) {
+    return const SearchResults();
+  }
+
+  // Debounce typing so rapid keystrokes don't flood the network
+  var didDispose = false;
+  ref.onDispose(() => didDispose = true);
+  await Future.delayed(const Duration(milliseconds: 300));
+  if (didDispose) {
     return const SearchResults();
   }
 
@@ -66,6 +85,8 @@ final searchResultsProvider = FutureProvider.autoDispose<SearchResults>((ref) as
       repo.searchAlbums(query),
       repo.searchPlaylists(query),
     ]);
+
+    if (didDispose) return const SearchResults();
 
     return SearchResults(
       query: query,

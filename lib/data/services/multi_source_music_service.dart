@@ -683,9 +683,93 @@ class MultiSourceMusicApiService implements MusicApiService {
 
 
   // -------------------------------------------------------------
+  // Google & YouTube Live Search Suggestions
+  // -------------------------------------------------------------
+  static Future<List<String>> fetchGoogleYouTubeSuggestions(String query) async {
+    final q = query.trim();
+    if (q.isEmpty) return [];
+    try {
+      final uri = Uri.parse('https://suggestqueries.google.com/complete/search?client=firefox&ds=yt&q=${Uri.encodeComponent(q)}');
+      final res = await http.get(uri).timeout(const Duration(seconds: 3));
+      if (res.statusCode == 200) {
+        final list = json.decode(res.body);
+        if (list is List && list.length >= 2 && list[1] is List) {
+          return (list[1] as List).map((e) => e.toString()).toList();
+        }
+      }
+    } catch (_) {}
+    return [];
+  }
+
+  // -------------------------------------------------------------
+  // Direct YouTube Video Metadata Resolver
+  // -------------------------------------------------------------
+  Future<Song?> _fetchDirectYouTubeSong(String videoId) async {
+    try {
+      final yt = SongAudioResolver.yt;
+      final v = await yt.videos.get(videoId).timeout(const Duration(seconds: 4));
+      return Song(
+        id: 'yt_${v.id.value}',
+        title: v.title,
+        artist: v.author,
+        album: 'YouTube',
+        artworkUrl: v.thumbnails.highResUrl.isNotEmpty
+            ? v.thumbnails.highResUrl
+            : 'https://img.youtube.com/vi/${v.id.value}/hqdefault.jpg',
+        audioUrl: '',
+        duration: v.duration ?? const Duration(minutes: 3, seconds: 30),
+        genre: 'موسيقى كاملة',
+        playsCount: 20000000,
+        releaseYear: v.uploadDate?.year.toString(),
+      );
+    } catch (_) {
+      try {
+        final oEmbedUri = Uri.parse('https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=$videoId&format=json');
+        final res = await _client.get(oEmbedUri).timeout(const Duration(seconds: 3));
+        if (res.statusCode == 200) {
+          final data = json.decode(res.body) as Map<String, dynamic>;
+          return Song(
+            id: 'yt_$videoId',
+            title: data['title'] as String? ?? 'مقطع يوتيوب',
+            artist: data['author_name'] as String? ?? 'YouTube',
+            album: 'YouTube',
+            artworkUrl: data['thumbnail_url'] as String? ?? 'https://img.youtube.com/vi/$videoId/hqdefault.jpg',
+            audioUrl: '',
+            duration: const Duration(minutes: 3, seconds: 30),
+            genre: 'موسيقى كاملة',
+            playsCount: 20000000,
+          );
+        }
+      } catch (_) {}
+    }
+    return null;
+  }
+
+  // -------------------------------------------------------------
   // API: YouTube & YouTube Music Search Engine (100% Full Audio)
   // -------------------------------------------------------------
   Future<List<Song>> _searchYouTube(String query) async {
+    final q = query.trim();
+    if (q.isEmpty) return [];
+
+    // 0. Check for direct YouTube URL or 11-char Video ID
+    final ytUrlRegExp = RegExp(
+        r'(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=))([\w-]{11})');
+    final match = ytUrlRegExp.firstMatch(q);
+    if (match != null) {
+      final vid = match.group(1);
+      if (vid != null) {
+        final direct = await _fetchDirectYouTubeSong(vid);
+        if (direct != null) return [direct];
+      }
+    } else if (RegExp(r'^[a-zA-Z0-9_-]{11}$').hasMatch(q) && (q.contains('-') || q.contains('_') || RegExp(r'\d').hasMatch(q))) {
+      final direct = await _fetchDirectYouTubeSong(q);
+      if (direct != null) return [direct];
+    }
+
+    final songs = <Song>[];
+    final seenIds = <String>{};
+
     // 1. Try ultra-fast InnerTube JSON search (~800ms)
     try {
       final uri = Uri.parse('https://www.youtube.com/youtubei/v1/search');
@@ -693,39 +777,43 @@ class MultiSourceMusicApiService implements MusicApiService {
         "context": {
           "client": {
             "clientName": "WEB",
-            "clientVersion": "2.20231201.00.00",
+            "clientVersion": "2.20240101.00.00",
             "hl": "ar",
             "gl": "EG"
           }
         },
-        "query": query
+        "query": q
       };
 
       final res = await _client.post(
         uri,
-        headers: {'Content-Type': 'application/json'},
+        headers: {
+          'Content-Type': 'application/json',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        },
         body: jsonEncode(payload),
-      ).timeout(const Duration(seconds: 4));
+      ).timeout(const Duration(seconds: 6));
 
       if (res.statusCode == 200) {
         final data = jsonDecode(res.body);
         final sections = data['contents']?['twoColumnSearchResultsRenderer']
-            ?['primaryContents']?['sectionListRenderer']?['contents'];
+            ?['primaryContents']?['sectionListRenderer']?['contents'] as List?;
         if (sections != null) {
-          final songs = <Song>[];
           for (final sec in sections) {
-            final items = sec['itemSectionRenderer']?['contents'];
+            final items = sec['itemSectionRenderer']?['contents'] as List?;
             if (items != null) {
               for (final item in items) {
-                final vr = item['videoRenderer'];
+                final vr = item['videoRenderer'] ?? item['compactVideoRenderer'];
                 if (vr != null) {
                   final videoId = vr['videoId'] as String?;
-                  if (videoId == null || videoId.isEmpty) continue;
+                  if (videoId == null || videoId.isEmpty || !seenIds.add(videoId)) continue;
 
-                  final fullTitle = vr['title']?['runs']?[0]?['text'] as String? ?? '';
+                  final fullTitle = vr['title']?['runs']?[0]?['text'] as String? ??
+                      vr['title']?['simpleText'] as String? ?? '';
                   final author = vr['ownerText']?['runs']?[0]?['text'] as String? ??
                       vr['shortBylineText']?['runs']?[0]?['text'] as String? ?? 'فنان';
-                  final durationText = vr['lengthText']?['simpleText'] as String? ?? '';
+                  final durationText = vr['lengthText']?['simpleText'] as String? ??
+                      vr['lengthText']?['runs']?[0]?['text'] as String? ?? '';
 
                   Duration dur = const Duration(minutes: 3, seconds: 30);
                   if (durationText.isNotEmpty) {
@@ -737,7 +825,8 @@ class MultiSourceMusicApiService implements MusicApiService {
                     }
                   }
 
-                  if (dur.inSeconds >= 45 && dur.inMinutes <= 25) {
+                  // Accept any reasonable duration (from 5 seconds up to 12 hours)
+                  if (dur.inSeconds >= 5 && dur.inHours <= 12) {
                     String songTitle = fullTitle;
                     String songArtist = author;
                     if (fullTitle.contains(' - ')) {
@@ -754,86 +843,90 @@ class MultiSourceMusicApiService implements MusicApiService {
                       }
                     }
 
-                    songTitle = songTitle
-                        .replaceAll(RegExp(r'\[.*?\]|\(.*?\)|Official.*|كليب|فيديو كليب|فيديو|أغنية|اغنية', caseSensitive: false), '')
+                    // Gentle cleanup of noise words while preserving title integrity
+                    final cleanedTitle = songTitle
+                        .replaceAll(RegExp(r'\[(?:Official|Audio|Clip|Video|Music|كليب|فيديو|أغنية|اغنية)[^\]]*\]', caseSensitive: false), '')
+                        .replaceAll(RegExp(r'\((?:Official|Audio|Clip|Video|Music|كليب|فيديو|أغنية|اغنية)[^\)]*\)', caseSensitive: false), '')
                         .trim();
-                    if (songTitle.isEmpty) songTitle = fullTitle;
+                    if (cleanedTitle.isNotEmpty) songTitle = cleanedTitle;
 
                     songs.add(Song(
                       id: 'yt_$videoId',
-                      title: songTitle,
-                      artist: songArtist,
+                      title: songTitle.isNotEmpty ? songTitle : fullTitle,
+                      artist: songArtist.isNotEmpty ? songArtist : author,
                       album: 'YouTube Music',
                       artworkUrl: 'https://img.youtube.com/vi/$videoId/hqdefault.jpg',
                       audioUrl: '',
                       duration: dur,
                       genre: 'موسيقى كاملة',
+                      playsCount: 15000000,
                     ));
                   }
                 }
               }
             }
           }
-          if (songs.isNotEmpty) return songs;
         }
       }
     } catch (_) {}
 
-    // 2. youtube_explode_dart fallback with fast timeout
-    try {
-      final yt = SongAudioResolver.yt;
-      final searchResults = await yt.search.search(query).timeout(const Duration(seconds: 4));
-      final songs = <Song>[];
+    // 2. Fallback to youtube_explode_dart if InnerTube returned few or no results
+    if (songs.length < 5) {
+      try {
+        final yt = SongAudioResolver.yt;
+        final searchResults = await yt.search.search(q).timeout(const Duration(seconds: 5));
+        for (final v in searchResults.take(15)) {
+          if (!seenIds.add(v.id.value)) continue;
+          final dur = v.duration ?? const Duration(minutes: 3, seconds: 30);
+          if (dur.inSeconds >= 5 && dur.inHours <= 12) {
+            final fullTitle = v.title;
+            String songTitle = fullTitle;
+            String songArtist = v.author;
 
-      for (final v in searchResults.take(10)) {
-        final dur = v.duration;
-        if (dur != null && dur.inSeconds >= 45 && dur.inMinutes <= 25) {
-          final fullTitle = v.title;
-          String songTitle = fullTitle;
-          String songArtist = v.author;
+            if (fullTitle.contains(' - ')) {
+              final parts = fullTitle.split(' - ');
+              if (parts.length >= 2) {
+                songArtist = parts[0].replaceAll(RegExp(r'[@#]'), '').trim();
+                songTitle = parts.sublist(1).join(' - ').trim();
+              }
+            } else if (fullTitle.contains(' | ')) {
+              final parts = fullTitle.split(' | ');
+              if (parts.length >= 2) {
+                songTitle = parts[0].trim();
+                songArtist = parts[1].trim();
+              }
+            }
 
-          if (fullTitle.contains(' - ')) {
-            final parts = fullTitle.split(' - ');
-            if (parts.length >= 2) {
-              songArtist = parts[0].replaceAll(RegExp(r'[@#]'), '').trim();
-              songTitle = parts.sublist(1).join(' - ').trim();
-            }
-          } else if (fullTitle.contains(' | ')) {
-            final parts = fullTitle.split(' | ');
-            if (parts.length >= 2) {
-              songTitle = parts[0].trim();
-              songArtist = parts[1].trim();
-            }
+            final cleanedTitle = songTitle
+                .replaceAll(RegExp(r'\[(?:Official|Audio|Clip|Video|Music|كليب|فيديو|أغنية|اغنية)[^\]]*\]', caseSensitive: false), '')
+                .replaceAll(RegExp(r'\((?:Official|Audio|Clip|Video|Music|كليب|فيديو|أغنية|اغنية)[^\)]*\)', caseSensitive: false), '')
+                .trim();
+            if (cleanedTitle.isNotEmpty) songTitle = cleanedTitle;
+
+            songs.add(Song(
+              id: 'yt_${v.id.value}',
+              title: songTitle.isNotEmpty ? songTitle : v.title,
+              artist: songArtist.isNotEmpty ? songArtist : v.author,
+              album: 'YouTube Music',
+              artworkUrl: v.thumbnails.highResUrl.isNotEmpty
+                  ? v.thumbnails.highResUrl
+                  : 'https://img.youtube.com/vi/${v.id.value}/hqdefault.jpg',
+              audioUrl: '',
+              duration: dur,
+              genre: 'موسيقى كاملة',
+              playsCount: 15000000,
+              releaseYear: v.uploadDate?.year.toString(),
+            ));
           }
-
-          songTitle = songTitle
-              .replaceAll(RegExp(r'\[.*?\]|\(.*?\)|Official.*|كليب|فيديو كليب|فيديو|أغنية|اغنية', caseSensitive: false), '')
-              .trim();
-          if (songTitle.isEmpty) songTitle = v.title;
-
-          songs.add(Song(
-            id: 'yt_${v.id.value}',
-            title: songTitle,
-            artist: songArtist,
-            album: 'YouTube Music',
-            artworkUrl: v.thumbnails.highResUrl.isNotEmpty
-                ? v.thumbnails.highResUrl
-                : 'https://img.youtube.com/vi/${v.id.value}/hqdefault.jpg',
-            audioUrl: '',
-            duration: dur,
-            genre: 'موسيقى كاملة',
-            releaseYear: v.uploadDate?.year.toString(),
-          ));
         }
-      }
-      return songs;
-    } catch (_) {
-      return [];
+      } catch (_) {}
     }
+
+    return songs;
   }
 
   // -------------------------------------------------------------
-  // Search Deduplication & Ranking Algorithm
+  // Intelligent Relevance Ranking & Deduplication Algorithm
   // -------------------------------------------------------------
   List<Song> _deduplicateAndRank(List<Song> songs, String userQuery) {
     final seen = <String>{};
@@ -859,26 +952,49 @@ class MultiSourceMusicApiService implements MusicApiService {
       }
     }
 
-    // Rank: songs matching title exactly come first, then contains title, then artist matches
+    // Comprehensive relevance scoring
+    int computeScore(Song s) {
+      final normTitle = _normalizeArabic(s.title);
+      final normArtist = _normalizeArabic(s.artist);
+      final combined = '$normTitle $normArtist';
+      final reverseCombined = '$normArtist $normTitle';
+
+      int sc = 0;
+      // Exact matches
+      if (normTitle == normUserQuery) sc += 1200;
+      if (normArtist == normUserQuery) sc += 900;
+      if (combined == normUserQuery || reverseCombined == normUserQuery) sc += 1100;
+
+      // Starts with
+      if (normTitle.startsWith(normUserQuery)) sc += 600;
+      if (normArtist.startsWith(normUserQuery)) sc += 450;
+      if (combined.startsWith(normUserQuery) || reverseCombined.startsWith(normUserQuery)) sc += 550;
+
+      // Contains
+      if (normTitle.contains(normUserQuery)) sc += 350;
+      if (normArtist.contains(normUserQuery)) sc += 250;
+      if (combined.contains(normUserQuery) || reverseCombined.contains(normUserQuery)) sc += 300;
+
+      // Query words match
+      final queryWords = normUserQuery.split(' ').where((w) => w.length > 1);
+      int matchedWords = 0;
+      for (final w in queryWords) {
+        if (normTitle.contains(w) || normArtist.contains(w)) {
+          matchedWords++;
+        }
+      }
+      sc += matchedWords * 150;
+
+      // Bonus for YouTube full audio source
+      if (s.id.startsWith('yt_')) sc += 80;
+
+      return sc;
+    }
+
     uniqueSongs.sort((a, b) {
-      final aTitle = _normalizeArabic(a.title);
-      final bTitle = _normalizeArabic(b.title);
-
-      final aExact = aTitle == normUserQuery;
-      final bExact = bTitle == normUserQuery;
-      if (aExact && !bExact) return -1;
-      if (!aExact && bExact) return 1;
-
-      final aStarts = aTitle.startsWith(normUserQuery);
-      final bStarts = bTitle.startsWith(normUserQuery);
-      if (aStarts && !bStarts) return -1;
-      if (!aStarts && bStarts) return 1;
-
-      final aContains = aTitle.contains(normUserQuery);
-      final bContains = bTitle.contains(normUserQuery);
-      if (aContains && !bContains) return -1;
-      if (!aContains && bContains) return 1;
-
+      final scoreA = computeScore(a);
+      final scoreB = computeScore(b);
+      if (scoreA != scoreB) return scoreB.compareTo(scoreA);
       return b.playsCount.compareTo(a.playsCount);
     });
 
@@ -1332,20 +1448,44 @@ class MultiSourceMusicApiService implements MusicApiService {
 
   @override
   Future<List<Playlist>> searchPlaylists(String rawQuery) async {
-    final query = rawQuery.trim().toLowerCase();
+    final query = rawQuery.trim();
     if (query.isEmpty) return [];
 
-    final allPlaylists = SampleMusicData.curatedPlaylists;
-
-    return allPlaylists.where((pl) {
-      final nameMatch = pl.name.toLowerCase().contains(query);
-      final descMatch = pl.description?.toLowerCase().contains(query) ?? false;
-      // Also match normalized Arabic
+    final localMatches = SampleMusicData.curatedPlaylists.where((pl) {
+      final nameMatch = pl.name.toLowerCase().contains(query.toLowerCase());
+      final descMatch = pl.description?.toLowerCase().contains(query.toLowerCase()) ?? false;
       final normQuery = _normalizeArabic(rawQuery);
       final normName = _normalizeArabic(pl.name);
       final normDesc = _normalizeArabic(pl.description ?? '');
       final normMatch = normName.contains(normQuery) || normDesc.contains(normQuery);
       return nameMatch || descMatch || normMatch;
     }).toList();
+
+    // Query Deezer live playlists
+    try {
+      final uri = Uri.parse('https://api.deezer.com/search/playlist?q=${Uri.encodeComponent(query)}&limit=15');
+      final res = await _client.get(uri).timeout(const Duration(seconds: 4));
+      if (res.statusCode == 200) {
+        final data = json.decode(res.body) as Map<String, dynamic>;
+        final list = data['data'] as List<dynamic>? ?? [];
+        final remotePlaylists = list.map((item) {
+          final pic = item['picture_big'] as String? ??
+              item['picture_medium'] as String? ??
+              'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600';
+          return Playlist(
+            id: 'deezer_pl_${item['id']}',
+            name: item['title'] as String? ?? 'قائمة تشغيل',
+            artworkUrl: pic,
+            description: 'قائمة تشغيل من إعداد ديزر (${item['nb_tracks'] ?? 0} مقطع)',
+          );
+        }).toList();
+
+        final combined = <Playlist>[...localMatches, ...remotePlaylists];
+        final seen = <String>{};
+        return combined.where((p) => seen.add(p.name.toLowerCase())).toList();
+      }
+    } catch (_) {}
+
+    return localMatches;
   }
 }
