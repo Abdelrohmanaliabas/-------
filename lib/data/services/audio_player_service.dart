@@ -26,6 +26,9 @@ class AudioPlayerService {
   }
 
   Future<void> _initAudioSession() async {
+    if (kIsWeb || (!Platform.isAndroid && !Platform.isIOS && !Platform.isMacOS)) {
+      return;
+    }
     try {
       final session = await AudioSession.instance;
       await session.configure(const AudioSessionConfiguration.music());
@@ -333,33 +336,7 @@ class AudioPlayerService {
     _currentIndex = (initialIndex >= 0 && initialIndex < songs.length) ? initialIndex : 0;
     _queueController.add(_queue);
 
-    final currentSong = _queue[_currentIndex];
-    _currentSongController.add(currentSong);
-    ListeningHistoryService.recordSongPlayed(currentSong);
-
-    // Preload current song stream so it starts instantly
-    unawaited(AudioStreamingProxy.preloadSong(currentSong));
-
-    final sources = _queue.map((s) {
-      return AudioSource.uri(
-        Uri.parse(AudioStreamingProxy.getSongStreamUrl(s)),
-        tag: _buildMediaItem(s),
-      );
-    }).toList();
-
-    try {
-      await _player.setAudioSources(
-        sources,
-        initialIndex: _currentIndex,
-        initialPosition: Duration.zero,
-      );
-      await _player.play();
-      _preloadNextSong();
-    } catch (e) {
-      debugPrint('Playback error with setAudioSources: $e');
-      // Fallback to direct load
-      await _loadAndPlayCurrentSong();
-    }
+    await _loadAndPlayCurrentSong();
   }
 
   Future<void> play() async {
@@ -384,11 +361,15 @@ class AudioPlayerService {
 
   Future<void> skipToNext() async {
     if (_queue.isEmpty) return;
-    if (_player.hasNext) {
-      await _player.seekToNext();
+    int nextIdx;
+    if (_currentIndex < _queue.length - 1) {
+      nextIdx = _currentIndex + 1;
     } else if (_player.loopMode == LoopMode.all || _queue.length > 1) {
-      await _player.seek(Duration.zero, index: 0);
+      nextIdx = 0;
+    } else {
+      return;
     }
+    await skipToIndex(nextIdx);
   }
 
   Future<void> skipToPrevious() async {
@@ -397,28 +378,22 @@ class AudioPlayerService {
       await _player.seek(Duration.zero);
       return;
     }
-    if (_player.hasPrevious) {
-      await _player.seekToPrevious();
+    int prevIdx;
+    if (_currentIndex > 0) {
+      prevIdx = _currentIndex - 1;
     } else if (_player.loopMode == LoopMode.all || _queue.length > 1) {
-      await _player.seek(Duration.zero, index: _queue.length - 1);
+      prevIdx = _queue.length - 1;
+    } else {
+      return;
     }
+    await skipToIndex(prevIdx);
   }
 
   Future<void> skipToIndex(int index) async {
     if (index >= 0 && index < _queue.length) {
       _currentIndex = index;
       _queueController.add(_queue);
-      _currentSongController.add(_queue[_currentIndex]);
-      try {
-        await _player.seek(Duration.zero, index: index);
-        if (!_player.playing) {
-          await _player.play();
-        }
-      } catch (e) {
-        debugPrint('seek error: $e');
-        await _loadAndPlayCurrentSong();
-      }
-      _preloadNextSong();
+      await _loadAndPlayCurrentSong();
     }
   }
 

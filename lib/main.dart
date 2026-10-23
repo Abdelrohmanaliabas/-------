@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -29,18 +30,20 @@ void main() async {
     ),
   );
 
-  // Initialize background audio playback service with notification controls
-  try {
-    await JustAudioBackground.init(
-      androidNotificationChannelId: 'com.mazikty.app.channel.audio',
-      androidNotificationChannelName: 'مازيكتي للموسيقى',
-      androidNotificationOngoing: false,
-      androidStopForegroundOnPause: false,
-      androidNotificationIcon: 'mipmap/ic_launcher',
-      notificationColor: const Color(0xFF212121),
-    );
-  } catch (e) {
-    debugPrint('JustAudioBackground init notification: $e');
+  // Initialize background audio playback service with notification controls (mobile only)
+  if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+    try {
+      await JustAudioBackground.init(
+        androidNotificationChannelId: 'com.mazikty.app.channel.audio',
+        androidNotificationChannelName: 'مازيكتي للموسيقى',
+        androidNotificationOngoing: false,
+        androidStopForegroundOnPause: false,
+        androidNotificationIcon: 'mipmap/ic_launcher',
+        notificationColor: const Color(0xFF212121),
+      );
+    } catch (e) {
+      debugPrint('JustAudioBackground init notification: $e');
+    }
   }
 
   runApp(

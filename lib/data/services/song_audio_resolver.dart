@@ -245,27 +245,7 @@ class SongAudioResolver {
       return scInfo;
     }
 
-    // 6. Fast iTunes Search preview fallback (~150ms)
-    if (!forceFresh && !isFallback && !song.id.startsWith('yt_')) {
-      final iTunesUrl = await _searchITunesPreview(cleanTitle, cleanArtist);
-      if (iTunesUrl != null && iTunesUrl.isNotEmpty) {
-        final result = ResolvedAudioInfo(
-          url: iTunesUrl,
-          duration: song.duration,
-          source: 'itunes_cdn',
-        );
-        _cache[cacheKey] = _CachedStream(
-          url: iTunesUrl,
-          duration: song.duration,
-          cachedAt: DateTime.now(),
-          source: 'itunes_cdn',
-        );
-        debugPrint('🍎 iTunes CDN resolved for "${song.title}": $iTunesUrl');
-        return result;
-      }
-    }
-
-    // 6. Known Verified YouTube ID (Instant lookup) - skip on fallback
+    // 4. Known Verified YouTube ID (Instant lookup) - skip on fallback
     if (!forceFresh && !isFallback) {
       String? knownId = _knownSongVideoIds[song.id] ?? _titleToVideoId[cleanTitle];
       if (knownId != null && knownId.isNotEmpty) {
