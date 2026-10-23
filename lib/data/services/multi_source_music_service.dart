@@ -1138,59 +1138,99 @@ class MultiSourceMusicApiService implements MusicApiService {
   }
 
   // -------------------------------------------------------------
-  // Dynamic Feed Methods for Discovery & Home Screen (Auto-Renewing)
+  // Stable Feed Methods for Discovery & Home Screen (Consistent across Refreshes)
   // -------------------------------------------------------------
+  List<Song>? _stableRecentlyPlayed;
+  List<Song>? _stableRecommended;
+  List<Song>? _stablePopular;
+  List<Song>? _stableNewReleases;
+  List<Song>? _stableContinueListening;
+
   @override
   Future<List<Song>> fetchRecentlyPlayed() async {
-    final shuffled = List<Song>.from(_curatedArabicHits)..shuffle();
-    return shuffled.take(6).toList();
+    if (_stableRecentlyPlayed != null && _stableRecentlyPlayed!.isNotEmpty) {
+      return _stableRecentlyPlayed!;
+    }
+    _stableRecentlyPlayed = _curatedArabicHits.take(6).toList();
+    return _stableRecentlyPlayed!;
   }
 
   @override
   Future<List<Song>> fetchRecommendedSongs() async {
+    if (_stableRecommended != null && _stableRecommended!.isNotEmpty) {
+      return _stableRecommended!;
+    }
     try {
-      final topics = ['شيرين', 'عمرو دياب', 'تامر حسني', 'حماقي', 'كاريوكي', 'ويجز'];
-      topics.shuffle();
-      final liveTracks = await _searchDeezer(topics.first);
+      final liveTracks = await _searchDeezer('عمرو دياب');
       if (liveTracks.isNotEmpty) {
-        final shuffled = List<Song>.from(_curatedArabicHits)..shuffle();
-        return [...liveTracks.take(8), ...shuffled.take(8)];
+        final seen = <String>{};
+        final combined = <Song>[];
+        for (final s in [...liveTracks.take(8), ..._curatedArabicHits]) {
+          if (seen.add(s.id)) {
+            combined.add(s);
+          }
+        }
+        _stableRecommended = combined.take(16).toList();
+        return _stableRecommended!;
       }
     } catch (_) {}
-    final shuffled = List<Song>.from(_curatedArabicHits)..shuffle();
-    return shuffled.take(14).toList();
+    _stableRecommended = _curatedArabicHits.take(16).toList();
+    return _stableRecommended!;
   }
 
   @override
   Future<List<Song>> fetchPopularSongs() async {
+    if (_stablePopular != null && _stablePopular!.isNotEmpty) {
+      return _stablePopular!;
+    }
     try {
       final trending = await _searchDeezer('تريند مصر 2024');
       if (trending.isNotEmpty) {
-        final shuffled = List<Song>.from(_curatedArabicHits)..shuffle();
-        return [...trending.take(8), ...shuffled.take(8)];
+        final seen = <String>{};
+        final combined = <Song>[];
+        for (final s in [..._curatedArabicHits, ...trending]) {
+          if (seen.add(s.id)) {
+            combined.add(s);
+          }
+        }
+        _stablePopular = combined.take(18).toList();
+        return _stablePopular!;
       }
     } catch (_) {}
-    final shuffled = List<Song>.from(_curatedArabicHits)..shuffle();
-    return shuffled.take(14).toList();
+    _stablePopular = _curatedArabicHits.take(18).toList();
+    return _stablePopular!;
   }
 
   @override
   Future<List<Song>> fetchNewReleases() async {
+    if (_stableNewReleases != null && _stableNewReleases!.isNotEmpty) {
+      return _stableNewReleases!;
+    }
     try {
       final itunesNew = await _searchItunesCountry('جديد', 'EG');
       if (itunesNew.isNotEmpty) {
-        final shuffled = List<Song>.from(_curatedArabicHits)..shuffle();
-        return [...itunesNew.take(8), ...shuffled.take(6)];
+        final seen = <String>{};
+        final combined = <Song>[];
+        for (final s in [...itunesNew.take(8), ..._curatedArabicHits.reversed]) {
+          if (seen.add(s.id)) {
+            combined.add(s);
+          }
+        }
+        _stableNewReleases = combined.take(14).toList();
+        return _stableNewReleases!;
       }
     } catch (_) {}
-    final shuffled = List<Song>.from(_curatedArabicHits)..shuffle();
-    return shuffled.take(12).toList();
+    _stableNewReleases = _curatedArabicHits.take(14).toList();
+    return _stableNewReleases!;
   }
 
   @override
   Future<List<Song>> fetchContinueListening() async {
-    final shuffled = List<Song>.from(_curatedArabicHits)..shuffle();
-    return shuffled.take(4).toList();
+    if (_stableContinueListening != null && _stableContinueListening!.isNotEmpty) {
+      return _stableContinueListening!;
+    }
+    _stableContinueListening = _curatedArabicHits.skip(2).take(4).toList();
+    return _stableContinueListening!;
   }
 
   @override

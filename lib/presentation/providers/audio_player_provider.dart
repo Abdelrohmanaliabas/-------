@@ -322,6 +322,10 @@ class AudioPlayerNotifier extends StateNotifier<PlayerStateData> {
     state = state.copyWith(clearCurrentSong: true, isPlaying: false);
   }
 
+  double get volume => _service.volume;
+  Stream<double> get volumeStream => _service.volumeStream;
+  Future<void> setVolume(double val) async => _service.setVolume(val);
+
   @override
   void dispose() {
     for (final s in _subscriptions) {
@@ -335,4 +339,9 @@ final audioPlayerProvider =
     StateNotifierProvider<AudioPlayerNotifier, PlayerStateData>((ref) {
   final service = ref.watch(audioPlayerServiceProvider);
   return AudioPlayerNotifier(service, ref: ref);
+});
+
+final playerVolumeProvider = StreamProvider<double>((ref) {
+  final service = ref.watch(audioPlayerServiceProvider);
+  return service.volumeStream;
 });

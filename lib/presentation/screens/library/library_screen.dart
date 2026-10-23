@@ -8,6 +8,7 @@ import 'package:mazikty/presentation/providers/playlists_provider.dart';
 import 'package:mazikty/presentation/widgets/playlist_card.dart';
 import 'package:mazikty/presentation/widgets/section_header.dart';
 import 'package:mazikty/presentation/screens/downloads/downloads_screen.dart';
+import 'package:mazikty/presentation/screens/favorites/favorites_screen.dart';
 import 'package:mazikty/presentation/screens/playlists/create_playlist_dialog.dart';
 
 class LibraryScreen extends ConsumerWidget {
@@ -63,7 +64,12 @@ class LibraryScreen extends ConsumerWidget {
                     subtitle: '$favoritesCount أغنية',
                     icon: Icons.favorite_rounded,
                     color: AppColors.accent,
-                    onTap: () {},
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const FavoritesScreen()),
+                      );
+                    },
                   ),
                 ),
               ],

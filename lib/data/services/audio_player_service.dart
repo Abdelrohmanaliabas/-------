@@ -447,6 +447,10 @@ class AudioPlayerService {
     await _player.setLoopMode(next);
   }
 
+  Stream<double> get volumeStream => _player.volumeStream;
+  double get volume => _player.volume;
+  Future<void> setVolume(double val) async => _player.setVolume(val.clamp(0.0, 1.0));
+
   void setQueue(List<Song> newQueue, {int? currentIndex}) {
     _queue = List.from(newQueue);
     AudioStreamingProxy.registerSongs(_queue);

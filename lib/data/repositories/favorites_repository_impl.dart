@@ -3,26 +3,29 @@ import 'dart:io';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../domain/models/song.dart';
 import '../../domain/repositories/favorites_repository.dart';
-import '../mock/sample_music_data.dart';
+import '../mock/liked_music_data.dart';
 
 class FavoritesRepositoryImpl implements FavoritesRepository {
   static const String _favoritesKey = 'mazikty_favorites';
+  static const String _seedKey = 'mazikty_liked_music_seeded_v2';
 
   @override
   Future<List<Song>> getFavorites() async {
     final prefs = await SharedPreferences.getInstance();
     final jsonString = prefs.getString(_favoritesKey);
+    final isSeeded = prefs.getBool(_seedKey) ?? false;
 
     if (jsonString == null) {
-      // First-time setup: initialize with sample favorites
-      final initialFavorites = SampleMusicData.songs.where((s) => s.isFavorite).toList();
+      // First-time setup: initialize with all liked songs from screenshots
+      final initialFavorites = List<Song>.from(LikedMusicData.likedSongs);
       await _saveFavorites(initialFavorites);
+      await prefs.setBool(_seedKey, true);
       return initialFavorites;
     }
 
     try {
       final List<dynamic> list = jsonDecode(jsonString);
-      return list.map((item) {
+      final savedSongs = list.map((item) {
         final song = Song.fromJson(item as Map<String, dynamic>).copyWith(isFavorite: true);
         // Verify local file exists for offline readiness
         if (song.localFilePath != null && File(song.localFilePath!).existsSync()) {
@@ -30,8 +33,19 @@ class FavoritesRepositoryImpl implements FavoritesRepository {
         }
         return song;
       }).toList();
+
+      if (!isSeeded) {
+        final existingIds = savedSongs.map((s) => s.id).toSet();
+        final toAdd = LikedMusicData.likedSongs.where((s) => !existingIds.contains(s.id)).toList();
+        final merged = [...toAdd, ...savedSongs];
+        await _saveFavorites(merged);
+        await prefs.setBool(_seedKey, true);
+        return merged;
+      }
+
+      return savedSongs;
     } catch (_) {
-      return [];
+      return LikedMusicData.likedSongs;
     }
   }
 

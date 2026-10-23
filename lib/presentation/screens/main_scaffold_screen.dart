@@ -4,7 +4,10 @@ import 'package:mazikty/presentation/screens/home/home_screen.dart';
 import 'package:mazikty/presentation/screens/library/library_screen.dart';
 import 'package:mazikty/presentation/screens/samples/samples_screen.dart';
 import 'package:mazikty/presentation/screens/search/search_screen.dart';
-import 'package:mazikty/presentation/screens/upgrade/upgrade_screen.dart';
+import 'package:mazikty/presentation/screens/favorites/favorites_screen.dart';
+import 'dart:io';
+import 'package:flutter/foundation.dart';
+import 'package:mazikty/presentation/widgets/desktop_side_controller.dart';
 import 'package:mazikty/presentation/widgets/mini_player.dart';
 
 class MainScaffoldScreen extends StatefulWidget {
@@ -30,8 +33,12 @@ class _MainScaffoldScreenState extends State<MainScaffoldScreen> {
       const SamplesScreen(),
       const SearchScreen(),
       const LibraryScreen(),
-      const UpgradeScreen(),
+      const FavoritesScreen(),
     ];
+
+    final isDesktopPlatform = !kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux);
+    final isWideScreen = MediaQuery.sizeOf(context).width >= 750;
+    final showDesktopController = isDesktopPlatform || isWideScreen;
 
     return Scaffold(
       backgroundColor: const Color(0xFF030303),
@@ -50,6 +57,15 @@ class _MainScaffoldScreenState extends State<MainScaffoldScreen> {
             bottom: 0,
             child: MiniPlayer(),
           ),
+
+          // Desktop Side Playback Controller on the right side
+          if (showDesktopController)
+            const Positioned(
+              top: 0,
+              bottom: 60,
+              right: 0,
+              child: DesktopSideController(),
+            ),
         ],
       ),
       bottomNavigationBar: Container(
@@ -102,9 +118,9 @@ class _MainScaffoldScreenState extends State<MainScaffoldScreen> {
               label: 'المكتبة',
             ),
             BottomNavigationBarItem(
-              icon: Icon(Icons.workspace_premium_outlined),
-              activeIcon: Icon(Icons.workspace_premium_rounded),
-              label: 'الترقية',
+              icon: Icon(Icons.favorite_outline_rounded),
+              activeIcon: Icon(Icons.favorite_rounded),
+              label: 'المفضلة',
             ),
           ],
         ),
