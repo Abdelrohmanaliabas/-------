@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mazikty/core/constants/app_typography.dart';
 import 'package:mazikty/presentation/screens/home/home_screen.dart';
 import 'package:mazikty/presentation/screens/library/library_screen.dart';
@@ -7,21 +8,66 @@ import 'package:mazikty/presentation/screens/search/search_screen.dart';
 import 'package:mazikty/presentation/screens/favorites/favorites_screen.dart';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
+import 'package:mazikty/presentation/providers/desktop_player_mode_provider.dart';
 import 'package:mazikty/presentation/widgets/desktop_side_controller.dart';
 import 'package:mazikty/presentation/widgets/mini_player.dart';
+import 'package:mazikty/presentation/widgets/standalone_mini_player_window.dart';
+import 'package:window_manager/window_manager.dart';
 
-class MainScaffoldScreen extends StatefulWidget {
+class MainScaffoldScreen extends ConsumerStatefulWidget {
   const MainScaffoldScreen({super.key});
 
   @override
-  State<MainScaffoldScreen> createState() => _MainScaffoldScreenState();
+  ConsumerState<MainScaffoldScreen> createState() => _MainScaffoldScreenState();
 }
 
-class _MainScaffoldScreenState extends State<MainScaffoldScreen> {
+class _MainScaffoldScreenState extends ConsumerState<MainScaffoldScreen> with WindowListener {
   int _currentIndex = 0;
 
   @override
+  void initState() {
+    super.initState();
+    if (!kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux)) {
+      windowManager.addListener(this);
+      _setupWindow();
+    }
+  }
+
+  Future<void> _setupWindow() async {
+    try {
+      await windowManager.setPreventClose(true);
+    } catch (e) {
+      debugPrint('Error setting prevent close: $e');
+    }
+  }
+
+  @override
+  void dispose() {
+    if (!kIsWeb && (Platform.isWindows || Platform.isMacOS || Platform.isLinux)) {
+      windowManager.removeListener(this);
+    }
+    super.dispose();
+  }
+
+  @override
+  void onWindowClose() async {
+    final mode = ref.read(desktopModeProvider);
+    if (mode == DesktopMode.full) {
+      // Rather than terminating, detach to floating mini player on the desktop
+      ref.read(desktopModeProvider.notifier).switchToMiniPlayer();
+    } else {
+      // In mini player mode, actually exit
+      await windowManager.destroy();
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final desktopMode = ref.watch(desktopModeProvider);
+    if (desktopMode == DesktopMode.miniPlayer) {
+      return const StandaloneMiniPlayerWindow();
+    }
+
     final screens = [
       HomeScreen(
         onSearchTap: () {
@@ -58,14 +104,9 @@ class _MainScaffoldScreenState extends State<MainScaffoldScreen> {
             child: MiniPlayer(),
           ),
 
-          // Desktop Side Playback Controller on the right side
+          // Desktop Floating Draggable Playback Controller
           if (showDesktopController)
-            const Positioned(
-              top: 0,
-              bottom: 60,
-              right: 0,
-              child: DesktopSideController(),
-            ),
+            const DesktopSideController(),
         ],
       ),
       bottomNavigationBar: Container(

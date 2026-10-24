@@ -3,6 +3,8 @@ import '../../domain/models/song.dart';
 class LikedMusicData {
   LikedMusicData._();
 
+  static List<Song> get songs => likedSongs;
+
   static const List<Song> likedSongs = [
     // 1. Aboya A'al
     Song(

@@ -58,69 +58,7 @@ class SongAudioResolver {
 
   static final Map<String, _CachedStream> _cache = {};
 
-  /// Instant lookup of verified YouTube video IDs for popular & curated songs
-  static final Map<String, String> _knownSongVideoIds = {
-    // Sherine
-    'hit_kalam_eneih': 'R8I3FOX7aZY',
-    'hit_el_watar_el_hassas': 'bCj8h0i9b_E',
-    'hit_hobboh_ganna': 'eUMjEOIO7Cs',
-    'hit_mashaer': 'Y0_eL8mY9qA',
-    // Amr Diab
-    'hit_tamally_maak': 'kI28QoX5W2M',
-    'hit_amr_makank': 'fS_Z_q2WvU8',
-    'hit_amr_ye3tallemo': '80M1Jd13z3I',
-    // Ahmed Saad
-    'hit_wasa3_wasa3': 'Xk6hK3b-n1A',
-    'hit_elyoum_elhelw': 'D3wGqM8T8bE',
-    // Wegz
-    'hit_el_bakht': 'x4eH5n1ZqjA',
-    'hit_wegz_dork_gy': 'zR3N4P1hW0E',
-    // Tamer Hosny
-    'hit_tamer_hormon': 'K_8H-T0p84Y',
-    'hit_tamer_naseeny': 'jY1lX8QfU-k',
-    // Mohamed Hamaki
-    'hit_hamaki_adrenaline': 'sH5p5V2P5L4',
-    // Cairokee
-    'hit_cairokee_bsrah': 'f8iC_19XQv8',
-    // Popular
-    'hit_oud_el_batal': '7b9G6_aL1a8',
-    'hit_bent_el_geran': 'u1t_qfU6fS4',
-    'hit_el_ghazala_ray2a': 'jP1gV_x1wY0',
-    'hit_satlana': 'B09ECkhGNsw',
-    'hit_tul8te_habibi': 'aX6dY9rX0-k',
-    'hit_jassmi_bnt_el3reed': 'h3ePzE-6v54',
-  };
 
-  /// Common title matches for instant ID mapping
-  static final Map<String, String> _titleToVideoId = {
-    'كلام عينيه': 'R8I3FOX7aZY',
-    'الوتر الحساس': 'bCj8h0i9b_E',
-    'حبه جنة': 'eUMjEOIO7Cs',
-    'حبه جنه': 'eUMjEOIO7Cs',
-    'مشاعر': 'Y0_eL8mY9qA',
-    'تملي معاك': 'kI28QoX5W2M',
-    'مكانك': 'fS_Z_q2WvU8',
-    'يتعلموا': '80M1Jd13z3I',
-    'وسع وسع': 'Xk6hK3b-n1A',
-    'ايه اليوم الحلو ده': 'D3wGqM8T8bE',
-    'إيه اليوم الحلو ده': 'D3wGqM8T8bE',
-    'البخت': 'x4eH5n1ZqjA',
-    'دورك جي': 'zR3N4P1hW0E',
-    'هرمون السعادة': 'K_8H-T0p84Y',
-    'ناسيني ليه': 'jY1lX8QfU-k',
-    'ادرينالين': 'sH5p5V2P5L4',
-    'أدرينالين': 'sH5p5V2P5L4',
-    'بسرح واتوه': 'f8iC_19XQv8',
-    'بسرح وأتوه': 'f8iC_19XQv8',
-    'عود البطل': '7b9G6_aL1a8',
-    'بنت الجيران': 'u1t_qfU6fS4',
-    'الغزالة رايقة': 'jP1gV_x1wY0',
-    'الغزاله رايقه': 'jP1gV_x1wY0',
-    'سطلانة': 'B09ECkhGNsw',
-    'سطلانه': 'B09ECkhGNsw',
-    'حبيبي ليه': 'aX6dY9rX0-k',
-    'بالبنط العريض': 'h3ePzE-6v54',
-  };
 
   /// Clear cached stream for a song (e.g. after a playback failure)
   static void clearCache(Song song) {
@@ -225,52 +163,14 @@ class SongAudioResolver {
           source: 'youtube_direct',
           videoId: videoId,
         );
-        debugPrint('⚡ Direct yt_ ID resolved for "${song.title}"');
+        debugPrint('⚡ Direct yt_ ID resolved for full song "${song.title}"');
         return result;
       } catch (e) {
         debugPrint('Invalid yt_ video ID "$videoIdStr": $e');
       }
     }
 
-    // 5. Resolve FULL SONG via SoundCloud (100% full song, 3-5 minutes, direct CloudFront MP3)
-    final scInfo = await _resolveSoundCloudTrack(cleanTitle, cleanArtist);
-    if (scInfo != null) {
-      _cache[cacheKey] = _CachedStream(
-        url: scInfo.url,
-        duration: scInfo.duration ?? song.duration,
-        cachedAt: DateTime.now(),
-        source: 'soundcloud_full',
-      );
-      debugPrint('☁️ SoundCloud FULL song resolved for "${song.title}" (${scInfo.duration?.inMinutes}:${((scInfo.duration?.inSeconds ?? 0) % 60).toString().padLeft(2, '0')}): ${scInfo.url}');
-      return scInfo;
-    }
-
-    // 4. Known Verified YouTube ID (Instant lookup) - skip on fallback
-    if (!forceFresh && !isFallback) {
-      String? knownId = _knownSongVideoIds[song.id] ?? _titleToVideoId[cleanTitle];
-      if (knownId != null && knownId.isNotEmpty) {
-        try {
-          final videoId = VideoId(knownId);
-          final result = ResolvedAudioInfo(
-            url: '',
-            duration: song.duration,
-            source: 'known_hit',
-            videoId: videoId,
-          );
-          _cache[cacheKey] = _CachedStream(
-            url: '',
-            duration: song.duration,
-            cachedAt: DateTime.now(),
-            source: 'known_hit',
-            videoId: videoId,
-          );
-          debugPrint('⚡ Verified hit ID ($knownId) matched for "${song.title}"');
-          return result;
-        } catch (_) {}
-      }
-    }
-
-    // 5. Fast InnerTube JSON Search (~800ms, no HTML scraping)
+    // 5. Fast InnerTube JSON Search (~300-600ms, real-time dynamic search with zero dead IDs)
     final query = cleanArtist.isNotEmpty ? '$cleanTitle $cleanArtist' : cleanTitle;
     final innerTubeVideoId = await _searchYouTubeInnerTube(query);
     if (innerTubeVideoId != null && innerTubeVideoId.isNotEmpty) {
@@ -294,6 +194,19 @@ class SongAudioResolver {
       } catch (_) {}
     }
 
+    // 6. Resolve FULL progressive MP3 via SoundCloud (skip HLS m3u8 on Windows as WinRT fails on it)
+    final scInfo = await _resolveSoundCloudTrack(cleanTitle, cleanArtist);
+    if (scInfo != null) {
+      _cache[cacheKey] = _CachedStream(
+        url: scInfo.url,
+        duration: scInfo.duration ?? song.duration,
+        cachedAt: DateTime.now(),
+        source: 'soundcloud_full',
+      );
+      debugPrint('☁️ SoundCloud FULL song resolved for "${song.title}": ${scInfo.url}');
+      return scInfo;
+    }
+
     // 6. youtube_explode_dart search fallback (with fast timeout)
     final ytResult = await _resolveFromYouTube(cleanTitle, cleanArtist, song.duration);
     if (ytResult != null) {
@@ -307,10 +220,14 @@ class SongAudioResolver {
       return ytResult;
     }
 
-    // 7. Direct audioUrl fallback (Deezer preview / iTunes / HTTP CDN)
+    // 7. Direct audioUrl fallback (Only full audio streams, NEVER 30-second previews)
     if (song.audioUrl.isNotEmpty &&
-        (song.audioUrl.startsWith('http://') || song.audioUrl.startsWith('https://'))) {
-      debugPrint('🎵 Falling back to direct audio URL for "${song.title}": ${song.audioUrl}');
+        (song.audioUrl.startsWith('http://') || song.audioUrl.startsWith('https://')) &&
+        !song.audioUrl.contains('itunes-assets') &&
+        !song.audioUrl.contains('apple.com') &&
+        !song.audioUrl.contains('dzcdn.net') &&
+        !song.audioUrl.contains('preview')) {
+      debugPrint('🎵 Falling back to direct full audio URL for "${song.title}": ${song.audioUrl}');
       return ResolvedAudioInfo(
         url: song.audioUrl,
         duration: song.duration,
@@ -376,7 +293,7 @@ class SongAudioResolver {
           final media = track['media']?['transcodings'] as List?;
           if (media == null || media.isEmpty) continue;
 
-          // Priority: Progressive MP3 for ExoPlayer native seek & playback, fallback to HLS
+          // Priority: Progressive MP3 for native seek & full playback
           dynamic selected;
           for (final t in media) {
             final proto = t['format']?['protocol'];
@@ -386,10 +303,13 @@ class SongAudioResolver {
               break;
             }
           }
-          selected ??= media.firstWhere(
-            (t) => t['format']?['protocol'] == 'hls',
-            orElse: () => media.first,
-          );
+          if (selected == null && !Platform.isWindows) {
+            selected = media.firstWhere(
+              (t) => t['format']?['protocol'] == 'hls',
+              orElse: () => null,
+            );
+          }
+          if (selected == null) continue;
 
           final streamUrlEndpoint = selected['url'] as String?;
           if (streamUrlEndpoint == null) continue;
@@ -401,6 +321,10 @@ class SongAudioResolver {
             final streamData = jsonDecode(streamRes.body);
             final streamUrl = streamData['url'] as String?;
             if (streamUrl != null && streamUrl.isNotEmpty) {
+              if (Platform.isWindows && streamUrl.contains('.m3u8')) {
+                // Windows Media Foundation does not reliably stream signed HLS playlists
+                continue;
+              }
               return ResolvedAudioInfo(
                 url: streamUrl,
                 duration: duration,
@@ -416,28 +340,6 @@ class SongAudioResolver {
     return null;
   }
 
-  // ---------------------------------------------------------------------------
-  // iTunes Search API (~150ms for direct Apple CDN preview stream)
-  // ---------------------------------------------------------------------------
-  static Future<String?> _searchITunesPreview(String title, String artist) async {
-    try {
-      final query = artist.isNotEmpty ? '$title $artist' : title;
-      final uri = Uri.parse(
-          'https://itunes.apple.com/search?term=${Uri.encodeComponent(query)}&media=music&limit=1');
-      final res = await http.get(uri).timeout(const Duration(seconds: 3));
-      if (res.statusCode == 200) {
-        final data = jsonDecode(res.body);
-        final results = data['results'] as List?;
-        if (results != null && results.isNotEmpty) {
-          final previewUrl = results[0]['previewUrl'] as String?;
-          if (previewUrl != null && previewUrl.isNotEmpty) {
-            return previewUrl;
-          }
-        }
-      }
-    } catch (_) {}
-    return null;
-  }
 
   // ---------------------------------------------------------------------------
   // YouTube InnerTube API Search (~800ms)

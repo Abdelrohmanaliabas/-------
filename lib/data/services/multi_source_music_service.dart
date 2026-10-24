@@ -87,7 +87,77 @@ class MultiSourceMusicApiService implements MusicApiService {
   // Curated Arabic Verified Catalog (Diverse & Updated Arabic Music)
   // -------------------------------------------------------------
   static final List<Song> _curatedArabicHits = [
-    // Sherine
+    // 1. Tamer Ashour
+    const Song(
+      id: 'hit_tamer_ashour_haygeely',
+      title: 'هيجيلي موجوع',
+      artist: 'تامر عاشور',
+      artistId: 'artist_tamer_ashour',
+      album: 'هيجيلي موجوع',
+      artworkUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/bc/5b/a6/bc5ba615-b439-9a1a-28c9-fcb2fadd31f2/3617382720432_cover.jpg/600x600bb.jpg',
+      audioUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/fd/04/95/fd0495d2-b436-b663-6c36-f0d5b259ec0b/mzaf_2777922666952326127.plus.aac.p.m4a',
+      duration: Duration(minutes: 4, seconds: 12),
+      genre: 'طرب معاصر',
+      playsCount: 55000000,
+      releaseYear: '2024',
+    ),
+    // 2. Hamza Namira
+    const Song(
+      id: 'hit_hamza_reyah',
+      title: 'رياح الحياة',
+      artist: 'حمزة نمرة',
+      artistId: 'artist_hamza_namira',
+      album: 'رايق',
+      artworkUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/9e/eb/bd/9eebbd9e-2ceb-0184-fca8-1a08beaf4c9d/artwork.jpg/600x600bb.jpg',
+      audioUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/3f/b9/77/3fb9778f-d9ce-4c35-878e-3e2254267b0b/mzaf_6812347307800652075.plus.aac.p.m4a',
+      duration: Duration(minutes: 4, seconds: 35),
+      genre: 'طرب معاصر',
+      playsCount: 42000000,
+      releaseYear: '2023',
+    ),
+    // 3. Wegz
+    const Song(
+      id: 'hit_el_bakht',
+      title: 'البخت',
+      artist: 'ويجز',
+      artistId: 'artist_wegz',
+      album: 'البخت - سينجل',
+      artworkUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/e2/07/3b/e2073b69-e9a9-0377-2a37-8eabccbc8ef5/6221216329950.jpg/600x600bb.jpg',
+      audioUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/e2/b0/1d/e2b01d30-7b5f-d520-4f3e-e1e250899b12/mzaf_2863315495467483634.plus.aac.p.m4a',
+      duration: Duration(minutes: 3, seconds: 50),
+      genre: 'تراب عربي',
+      playsCount: 35000000,
+      releaseYear: '2022',
+    ),
+    // 4. Tamer Hosny
+    const Song(
+      id: 'hit_tamer_naseeny',
+      title: 'ناسيني ليه',
+      artist: 'تامر حسني',
+      artistId: 'artist_tamer',
+      album: 'عيش بشوقك',
+      artworkUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music221/v4/52/9a/ab/529aabab-f576-48be-c791-3f658e6149a5/6221117229724.jpg/600x600bb.jpg',
+      audioUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/89/9f/de/899fde12-cbcb-916d-8d8d-b83bc28b4934/mzaf_13818730788114474143.plus.aac.p.m4a',
+      duration: Duration(minutes: 3, seconds: 55),
+      genre: 'طرب رومانسي',
+      playsCount: 38000000,
+      releaseYear: '2018',
+    ),
+    // 5. Mohamed Hamaki
+    const Song(
+      id: 'hit_hamaki_adrenaline',
+      title: 'أدرينالين',
+      artist: 'محمد حماقي',
+      artistId: 'artist_hamaki',
+      album: 'سينجل 2022',
+      artworkUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music122/v4/f8/65/d9/f865d971-91df-3ac7-b966-c420b8561c58/1144411.jpg/600x600bb.jpg',
+      audioUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview112/v4/79/32/da/7932da78-1fc1-3931-c6c0-f3869681dfda/mzaf_10542712012174392451.plus.aac.p.m4a',
+      duration: Duration(minutes: 3, seconds: 05),
+      genre: 'بوب عربي',
+      playsCount: 27000000,
+      releaseYear: '2022',
+    ),
+    // 6. Sherine
     const Song(
       id: 'hit_kalam_eneih',
       title: 'كلام عينيه',
@@ -101,85 +171,19 @@ class MultiSourceMusicApiService implements MusicApiService {
       playsCount: 38000000,
       releaseYear: '2018',
     ),
+    // 7. Assala
     const Song(
-      id: 'hit_el_watar_el_hassas',
-      title: 'الوتر الحساس',
-      artist: 'شيرين عبد الوهاب',
-      artistId: 'artist_sherine',
-      album: 'نساي',
-      artworkUrl: 'https://cdn-images.dzcdn.net/images/cover/0c92030549ec798f882778d7d127e316/500x500-000000-80-0-0.jpg',
-      audioUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/ae/69/bd/ae69bd62-653c-7343-c789-cc5ffbee606a/mzaf_91142661183722088.plus.aac.p.m4a',
-      duration: Duration(minutes: 4, seconds: 22),
-      genre: 'طرب رومانسي',
-      playsCount: 42000000,
-      releaseYear: '2018',
-    ),
-    const Song(
-      id: 'hit_hobboh_ganna',
-      title: 'حبه جنة',
-      artist: 'شيرين عبد الوهاب',
-      artistId: 'artist_sherine',
-      album: 'نساي',
-      artworkUrl: 'https://cdn-images.dzcdn.net/images/cover/e5ab08f782135c3cc88289ac8a8bf7be/500x500-000000-80-0-0.jpg',
-      audioUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/1f/13/c7/1f13c703-bdfc-70d3-155a-d59fe39dcb10/mzaf_2169797306176369190.plus.aac.p.m4a',
-      duration: Duration(minutes: 4, seconds: 15),
-      genre: 'طرب رومانسي',
-      playsCount: 36000000,
-      releaseYear: '2018',
-    ),
-    const Song(
-      id: 'hit_mashaer',
-      title: 'مشاعر',
-      artist: 'شيرين عبد الوهاب',
-      artistId: 'artist_sherine',
-      album: 'حكاية حياة',
-      artworkUrl: 'https://cdn-images.dzcdn.net/images/cover/79ec18a8ec2eb4989eda6d13df12ec99/500x500-000000-80-0-0.jpg',
-      audioUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/08/13/32/08133239-98a1-7578-e365-8b489219c0db/mzaf_13654587899466436776.plus.aac.p.m4a',
-      duration: Duration(minutes: 4, seconds: 12),
-      genre: 'طرب رومانسي',
-      playsCount: 28900000,
-      releaseYear: '2013',
-    ),
-
-    // Amr Diab
-    const Song(
-      id: 'hit_tamally_maak',
-      title: 'تملي معاك',
-      artist: 'عمرو دياب',
-      artistId: 'artist_amr_diab',
-      album: 'تملي معاك',
-      artworkUrl: 'https://cdn-images.dzcdn.net/images/cover/123994eb2834a27c0832210a7cce6e16/500x500-000000-80-0-0.jpg',
-      audioUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/5e/df/09/5edf0981-ce52-4740-f0b2-f6ad0760afcb/mzaf_17144740537777531434.plus.aac.p.m4a',
-      duration: Duration(minutes: 4, seconds: 30),
-      genre: 'بوب عربي',
-      playsCount: 45000000,
-      releaseYear: '2000',
-    ),
-    const Song(
-      id: 'hit_amr_makank',
-      title: 'مكانك',
-      artist: 'عمرو دياب',
-      artistId: 'artist_amr_diab',
-      album: 'مكانك 2024',
-      artworkUrl: 'https://cdn-images.dzcdn.net/images/cover/9f7928b5012046c5150182705faae304/500x500-000000-80-0-0.jpg',
-      audioUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/15/50/27/155027eb-3590-6c01-1838-7fd4dcfcfe04/mzaf_12780690174101010359.plus.aac.p.m4a',
-      duration: Duration(minutes: 3, seconds: 45),
-      genre: 'بوب عربي',
-      playsCount: 19800000,
-      releaseYear: '2024',
-    ),
-    const Song(
-      id: 'hit_amr_ye3tallemo',
-      title: 'يتعلموا',
-      artist: 'عمرو دياب',
-      artistId: 'artist_amr_diab',
-      album: 'كل حياتي',
+      id: 'hit_assala_fawq',
+      title: 'فوق',
+      artist: 'أصالة',
+      artistId: 'artist_assala',
+      album: 'لحقت نفسي',
       artworkUrl: 'https://cdn-images.dzcdn.net/images/cover/9346f66804541490beca47721268cd7c/500x500-000000-80-0-0.jpg',
-      audioUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/c7/2b/6e/c72b6e58-d88b-3193-468a-2403805c1c84/mzaf_4069044560418630041.plus.aac.p.m4a',
-      duration: Duration(minutes: 3, seconds: 42),
-      genre: 'بوب عربي',
-      playsCount: 31000000,
-      releaseYear: '2018',
+      audioUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview211/v4/ae/69/bd/ae69bd62-653c-7343-c789-cc5ffbee606a/mzaf_91142661183722088.plus.aac.p.m4a',
+      duration: Duration(minutes: 3, seconds: 55),
+      genre: 'طرب',
+      playsCount: 38000000,
+      releaseYear: '2023',
     ),
 
     // Ahmed Saad
@@ -1146,12 +1150,18 @@ class MultiSourceMusicApiService implements MusicApiService {
   List<Song>? _stableNewReleases;
   List<Song>? _stableContinueListening;
 
+  bool _isAmrDiab(Song s) {
+    final a = s.artist.toLowerCase();
+    final t = s.title.toLowerCase();
+    return a.contains('عمرو دياب') || a.contains('amr diab') || t.contains('عمرو دياب') || t.contains('amr diab');
+  }
+
   @override
   Future<List<Song>> fetchRecentlyPlayed() async {
     if (_stableRecentlyPlayed != null && _stableRecentlyPlayed!.isNotEmpty) {
       return _stableRecentlyPlayed!;
     }
-    _stableRecentlyPlayed = _curatedArabicHits.take(6).toList();
+    _stableRecentlyPlayed = _curatedArabicHits.where((s) => !_isAmrDiab(s)).take(6).toList();
     return _stableRecentlyPlayed!;
   }
 
@@ -1161,12 +1171,12 @@ class MultiSourceMusicApiService implements MusicApiService {
       return _stableRecommended!;
     }
     try {
-      final liveTracks = await _searchDeezer('عمرو دياب');
+      final liveTracks = await _searchDeezer('تامر عاشور شيرين حمزة نمرة');
       if (liveTracks.isNotEmpty) {
         final seen = <String>{};
         final combined = <Song>[];
         for (final s in [...liveTracks.take(8), ..._curatedArabicHits]) {
-          if (seen.add(s.id)) {
+          if (!_isAmrDiab(s) && seen.add(s.id)) {
             combined.add(s);
           }
         }
@@ -1174,7 +1184,7 @@ class MultiSourceMusicApiService implements MusicApiService {
         return _stableRecommended!;
       }
     } catch (_) {}
-    _stableRecommended = _curatedArabicHits.take(16).toList();
+    _stableRecommended = _curatedArabicHits.where((s) => !_isAmrDiab(s)).take(16).toList();
     return _stableRecommended!;
   }
 
@@ -1189,7 +1199,7 @@ class MultiSourceMusicApiService implements MusicApiService {
         final seen = <String>{};
         final combined = <Song>[];
         for (final s in [..._curatedArabicHits, ...trending]) {
-          if (seen.add(s.id)) {
+          if (!_isAmrDiab(s) && seen.add(s.id)) {
             combined.add(s);
           }
         }
@@ -1197,7 +1207,7 @@ class MultiSourceMusicApiService implements MusicApiService {
         return _stablePopular!;
       }
     } catch (_) {}
-    _stablePopular = _curatedArabicHits.take(18).toList();
+    _stablePopular = _curatedArabicHits.where((s) => !_isAmrDiab(s)).take(18).toList();
     return _stablePopular!;
   }
 
@@ -1212,7 +1222,7 @@ class MultiSourceMusicApiService implements MusicApiService {
         final seen = <String>{};
         final combined = <Song>[];
         for (final s in [...itunesNew.take(8), ..._curatedArabicHits.reversed]) {
-          if (seen.add(s.id)) {
+          if (!_isAmrDiab(s) && seen.add(s.id)) {
             combined.add(s);
           }
         }
@@ -1220,7 +1230,7 @@ class MultiSourceMusicApiService implements MusicApiService {
         return _stableNewReleases!;
       }
     } catch (_) {}
-    _stableNewReleases = _curatedArabicHits.take(14).toList();
+    _stableNewReleases = _curatedArabicHits.where((s) => !_isAmrDiab(s)).take(14).toList();
     return _stableNewReleases!;
   }
 
@@ -1229,7 +1239,7 @@ class MultiSourceMusicApiService implements MusicApiService {
     if (_stableContinueListening != null && _stableContinueListening!.isNotEmpty) {
       return _stableContinueListening!;
     }
-    _stableContinueListening = _curatedArabicHits.skip(2).take(4).toList();
+    _stableContinueListening = _curatedArabicHits.where((s) => !_isAmrDiab(s)).skip(2).take(4).toList();
     return _stableContinueListening!;
   }
 
@@ -1259,7 +1269,7 @@ class MultiSourceMusicApiService implements MusicApiService {
     }
 
     final results = await Future.wait([
-      deezerArtistImage('Amr Diab', 'https://cdn-images.dzcdn.net/images/artist/04381e254ff4ad4c43ac62d7483fea0f/500x500-000000-80-0-0.jpg'),
+      deezerArtistImage('Tamer Ashour', 'https://cdn-images.dzcdn.net/images/artist/9bce0ee0ca1ec88e6a8d72e1d3f6ce8c/500x500-000000-80-0-0.jpg'),
       deezerArtistImage('Sherine Abdel Wahab', 'https://cdn-images.dzcdn.net/images/artist/9bce0ee0ca1ec88e6a8d72e1d3f6ce8c/500x500-000000-80-0-0.jpg'),
       deezerArtistImage('Tamer Hosny', 'https://cdn-images.dzcdn.net/images/artist/2e3a7c9d5f1b4e6a8c0d2f4b6e8a0c2d/500x500-000000-80-0-0.jpg'),
       deezerArtistImage('Mohamed Hamaki', 'https://cdn-images.dzcdn.net/images/artist/7e6e84b1c9e7fb5b0e60d0e3a1d0c8b5/500x500-000000-80-0-0.jpg'),
@@ -1271,13 +1281,13 @@ class MultiSourceMusicApiService implements MusicApiService {
 
     return [
       Artist(
-        id: 'artist_amr_diab',
-        name: 'عمرو دياب',
+        id: 'artist_tamer_ashour',
+        name: 'تامر عاشور',
         imageUrl: results[0],
-        bio: 'الهضبة وسفير الأغنية العربية لأكثر من أربعة عقود.',
-        genre: 'بوب عربي',
-        followersCount: 9500000,
-        monthlyListeners: 14000000,
+        bio: 'فنان ومطرب مصري صاحب الحنجرة الذهبية والأغاني الدرامية والرومانسية المؤثرة.',
+        genre: 'طرب معاصر',
+        followersCount: 7500000,
+        monthlyListeners: 10000000,
       ),
       Artist(
         id: 'artist_sherine',

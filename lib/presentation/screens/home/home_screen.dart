@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:mazikty/data/mock/liked_music_data.dart';
 import 'package:mazikty/data/mock/sample_music_data.dart';
 import 'package:mazikty/domain/models/song.dart';
 import 'package:mazikty/presentation/providers/audio_player_provider.dart';
@@ -44,8 +45,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final recommendedAsync = ref.watch(recommendedSongsProvider);
     final popularAsync = ref.watch(popularSongsProvider);
 
-    final allPopular = popularAsync.value ?? SampleMusicData.songs;
-    final allRecommended = recommendedAsync.value ?? SampleMusicData.songs;
+    bool isAmrDiab(Song s) {
+      final a = s.artist.toLowerCase();
+      final t = s.title.toLowerCase();
+      return a.contains('عمرو دياب') || a.contains('amr diab') || t.contains('عمرو دياب') || t.contains('amr diab');
+    }
+
+    final rawPopular = popularAsync.value ?? SampleMusicData.songs;
+    final rawRecommended = recommendedAsync.value ?? SampleMusicData.songs;
+
+    final allPopular = rawPopular.where((s) => !isAmrDiab(s)).toList();
+    final allRecommended = rawRecommended.where((s) => !isAmrDiab(s)).toList();
 
     // Filter by mood if selected
     final List<Song> displayedSongs = _selectedMood == 'الكل'
@@ -245,36 +255,45 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ),
                       const SizedBox(height: 12),
 
-                      // 3x3 Grid PageView
-                      SizedBox(
-                        height: 380,
-                        child: PageView.builder(
-                          controller: _quickPlayPageController,
-                          itemCount: 2, // 2 pages of 3x3 cards
-                          onPageChanged: (idx) {
-                            setState(() {
-                              _quickPlayPageIndex = idx;
-                            });
-                          },
-                          itemBuilder: (context, page) {
-                            final startIndex = page * 9;
-                            final pageItems = displayedSongs.skip(startIndex).take(9).toList();
-                            return GridView.builder(
-                              physics: const NeverScrollableScrollPhysics(),
-                              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 3,
-                                mainAxisSpacing: 10,
-                                crossAxisSpacing: 10,
-                                childAspectRatio: 0.95,
-                              ),
-                              itemCount: pageItems.length,
-                              itemBuilder: (context, i) {
-                                final song = pageItems[i];
-                                return _buildQuickPlayCard(song, displayedSongs);
+                      // Responsive Quick Play Grid PageView
+                      Builder(
+                        builder: (context) {
+                          final isWide = MediaQuery.sizeOf(context).width >= 750;
+                          final itemsPerPage = isWide ? 6 : 9;
+                          final crossCount = isWide ? 6 : 3;
+                          final gridHeight = isWide ? 190.0 : 380.0;
+
+                          return SizedBox(
+                            height: gridHeight,
+                            child: PageView.builder(
+                              controller: _quickPlayPageController,
+                              itemCount: 2, // 2 pages of cards
+                              onPageChanged: (idx) {
+                                setState(() {
+                                  _quickPlayPageIndex = idx;
+                                });
                               },
-                            );
-                          },
-                        ),
+                              itemBuilder: (context, page) {
+                                final startIndex = page * itemsPerPage;
+                                final pageItems = displayedSongs.skip(startIndex).take(itemsPerPage).toList();
+                                return GridView.builder(
+                                  physics: const NeverScrollableScrollPhysics(),
+                                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: crossCount,
+                                    mainAxisSpacing: 10,
+                                    crossAxisSpacing: 10,
+                                    childAspectRatio: isWide ? 0.90 : 0.95,
+                                  ),
+                                  itemCount: pageItems.length,
+                                  itemBuilder: (context, i) {
+                                    final song = pageItems[i];
+                                    return _buildQuickPlayCard(song, displayedSongs);
+                                  },
+                                );
+                              },
+                            ),
+                          );
+                        },
                       ),
 
                       // Dots Page Indicator below 3x3 Grid
@@ -569,10 +588,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   Widget _buildQuickPicksHorizontalSection(List<Song> allPopular) {
     final picks = <Song>[...allPopular];
-    if (picks.length < 20) {
+    if (picks.length < 36) {
       picks.addAll(SampleMusicData.songs);
+      picks.addAll(LikedMusicData.songs);
     }
-    final fullList = picks.take(20).toList();
+    final fullList = picks.take(36).toList();
+    final isDesktop = MediaQuery.sizeOf(context).width >= 800;
+    final totalPages = isDesktop ? 3 : 5;
 
     return Column(
       children: [
@@ -580,33 +602,83 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           height: 256,
           child: PageView.builder(
             controller: _quickPicksPageController,
-            itemCount: 5, // Exactly 5 horizontal swipe pages requested by user
+            itemCount: totalPages,
             onPageChanged: (idx) {
               setState(() {
                 _quickPicksPageIndex = idx;
               });
             },
             itemBuilder: (context, page) {
-              final pageItems = fullList.skip(page * 4).take(4).toList();
-              return Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: List.generate(pageItems.length, (i) {
-                    final song = pageItems[i];
-                    final overallIndex = page * 4 + i;
-                    return _buildQuickPickRow(song, fullList, overallIndex);
-                  }),
-                ),
-              );
+              if (isDesktop) {
+                // Desktop: 3 columns side by side (4 songs per column = 12 songs per page)
+                final pageItems = fullList.skip(page * 12).take(12).toList();
+                final col1 = pageItems.take(4).toList();
+                final col2 = pageItems.skip(4).take(4).toList();
+                final col3 = pageItems.skip(8).take(4).toList();
+
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: List.generate(col1.length, (i) {
+                            final song = col1[i];
+                            final overallIndex = page * 12 + i;
+                            return _buildQuickPickRow(song, fullList, overallIndex);
+                          }),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: List.generate(col2.length, (i) {
+                            final song = col2[i];
+                            final overallIndex = page * 12 + 4 + i;
+                            return _buildQuickPickRow(song, fullList, overallIndex);
+                          }),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: List.generate(col3.length, (i) {
+                            final song = col3[i];
+                            final overallIndex = page * 12 + 8 + i;
+                            return _buildQuickPickRow(song, fullList, overallIndex);
+                          }),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              } else {
+                // Mobile: 1 column of 4 songs per page
+                final pageItems = fullList.skip(page * 4).take(4).toList();
+                return Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 4),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: List.generate(pageItems.length, (i) {
+                      final song = pageItems[i];
+                      final overallIndex = page * 4 + i;
+                      return _buildQuickPickRow(song, fullList, overallIndex);
+                    }),
+                  ),
+                );
+              }
             },
           ),
         ),
         const SizedBox(height: 10),
-        // 5-dot page indicator for the 5 horizontal screens
+        // Dot page indicator
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
-          children: List.generate(5, (index) {
+          children: List.generate(totalPages, (index) {
             return Padding(
               padding: const EdgeInsets.symmetric(horizontal: 3),
               child: _buildDotIndicator(_quickPicksPageIndex == index),

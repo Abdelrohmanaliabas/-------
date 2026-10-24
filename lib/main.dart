@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:just_audio_background/just_audio_background.dart';
+import 'package:window_manager/window_manager.dart';
 import 'core/constants/app_theme.dart';
 import 'presentation/screens/main_scaffold_screen.dart';
 
@@ -43,6 +44,29 @@ void main() async {
       );
     } catch (e) {
       debugPrint('JustAudioBackground init notification: $e');
+    }
+  }
+
+  // Initialize desktop window management and ensure correct Arabic title
+  if (!kIsWeb && (Platform.isWindows || Platform.isLinux || Platform.isMacOS)) {
+    try {
+      await windowManager.ensureInitialized();
+      const windowOptions = WindowOptions(
+        size: Size(1280, 720),
+        minimumSize: Size(320, 480),
+        center: true,
+        backgroundColor: Colors.transparent,
+        skipTaskbar: false,
+        titleBarStyle: TitleBarStyle.normal,
+        title: "مازيكتي - Mazikty",
+      );
+      windowManager.waitUntilReadyToShow(windowOptions, () async {
+        await windowManager.show();
+        await windowManager.focus();
+        await windowManager.setTitle("مازيكتي - Mazikty");
+      });
+    } catch (e) {
+      debugPrint('WindowManager init error: $e');
     }
   }
 

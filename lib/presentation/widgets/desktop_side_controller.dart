@@ -5,6 +5,7 @@ import 'package:just_audio/just_audio.dart';
 import 'package:mazikty/core/constants/app_colors.dart';
 import 'package:mazikty/core/constants/app_typography.dart';
 import 'package:mazikty/presentation/providers/audio_player_provider.dart';
+import 'package:mazikty/presentation/providers/desktop_player_mode_provider.dart';
 import 'package:mazikty/presentation/providers/favorites_provider.dart';
 import 'package:mazikty/presentation/screens/player/full_player_screen.dart';
 
@@ -18,6 +19,7 @@ class DesktopSideController extends ConsumerStatefulWidget {
 class _DesktopSideControllerState extends ConsumerState<DesktopSideController> {
   bool _isCollapsed = false;
   double _lastVolume = 1.0;
+  Offset? _position;
 
   String _formatDuration(Duration duration) {
     final minutes = duration.inMinutes.remainder(60).toString().padLeft(2, '0');
@@ -32,84 +34,121 @@ class _DesktopSideControllerState extends ConsumerState<DesktopSideController> {
     final currentVolume = ref.watch(playerVolumeProvider).value ?? 1.0;
     final isFav = song != null && (ref.watch(favoritesProvider).value?.any((s) => s.id == song.id) ?? false);
 
-    // Collapsed Mode: Slim floating vertical bar
+    final screenSize = MediaQuery.of(context).size;
+    _position ??= Offset(screenSize.width - 310, 40);
+
+    // Keep position within desktop window boundaries
+    final maxLeft = (screenSize.width - (_isCollapsed ? 70 : 300)).clamp(0.0, screenSize.width);
+    final maxTop = (screenSize.height - 180).clamp(0.0, screenSize.height);
+    final currentLeft = _position!.dx.clamp(0.0, maxLeft);
+    final currentTop = _position!.dy.clamp(0.0, maxTop);
+
+    // Collapsed Mode: Slim draggable vertical pill
     if (_isCollapsed) {
-      return Align(
-        alignment: Alignment.centerRight,
-        child: Container(
-          margin: const EdgeInsets.only(right: 12),
-          decoration: BoxDecoration(
-            color: const Color(0xFF161616).withAlpha(240),
-            borderRadius: BorderRadius.circular(30),
-            border: Border.all(color: const Color(0xFF2C2C2C), width: 1.2),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withAlpha(120),
-                blurRadius: 16,
-                offset: const Offset(-2, 4),
+      return Positioned(
+        left: currentLeft,
+        top: currentTop,
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onPanUpdate: (details) {
+            setState(() {
+              _position = Offset(
+                _position!.dx + details.delta.dx,
+                _position!.dy + details.delta.dy,
+              );
+            });
+          },
+          child: MouseRegion(
+            cursor: SystemMouseCursors.move,
+            child: Container(
+              decoration: BoxDecoration(
+                color: const Color(0xFF161616).withAlpha(240),
+                borderRadius: BorderRadius.circular(30),
+                border: Border.all(color: const Color(0xFF2C2C2C), width: 1.2),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withAlpha(140),
+                    blurRadius: 16,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
-            ],
-          ),
-          padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Expand button
-              IconButton(
-                icon: const Icon(Icons.chevron_left_rounded, color: Colors.white70, size: 26),
-                tooltip: 'توسيع لوحة التحكم',
-                onPressed: () => setState(() => _isCollapsed = false),
-              ),
-              const SizedBox(height: 8),
+              padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Drag indicator
+                  const Icon(Icons.drag_indicator_rounded, color: Colors.white30, size: 18),
+                  const SizedBox(height: 4),
 
-              // Logo
-              ClipRRect(
-                borderRadius: BorderRadius.circular(6),
-                child: Image.asset(
-                  'assets/images/logo.png',
-                  width: 28,
-                  height: 28,
-                  fit: BoxFit.contain,
-                ),
-              ),
-              const SizedBox(height: 12),
+                  // Expand button
+                  IconButton(
+                    icon: const Icon(Icons.chevron_left_rounded, color: Colors.white70, size: 26),
+                    tooltip: 'توسيع لوحة التحكم',
+                    onPressed: () => setState(() => _isCollapsed = false),
+                  ),
+                  const SizedBox(height: 2),
 
-              // Play/Pause button
-              IconButton(
-                icon: playerState.isBuffering
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                      )
-                    : Icon(
-                        playerState.isPlaying ? Icons.pause_circle_filled_rounded : Icons.play_circle_fill_rounded,
-                        color: AppColors.primary,
-                        size: 32,
-                      ),
-                tooltip: playerState.isPlaying ? 'إيقاف مؤقت' : 'تشغيل',
-                onPressed: () => ref.read(audioPlayerProvider.notifier).playOrPause(),
-              ),
-              const SizedBox(height: 4),
+                  // Detach to Desktop Floating Window
+                  IconButton(
+                    icon: const Icon(Icons.picture_in_picture_alt_rounded, color: Colors.white70, size: 20),
+                    tooltip: 'فصل إلى نافذة عائمة على سطح المكتب',
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                    onPressed: () => ref.read(desktopModeProvider.notifier).switchToMiniPlayer(),
+                  ),
+                  const SizedBox(height: 6),
 
-              // Next
-              IconButton(
-                icon: const Icon(Icons.skip_next_rounded, color: Colors.white, size: 24),
-                tooltip: 'التالي',
-                onPressed: () => ref.read(audioPlayerProvider.notifier).next(),
+                  // Logo
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(6),
+                    child: Image.asset(
+                      'assets/images/logo.png',
+                      width: 26,
+                      height: 26,
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+
+                  // Play/Pause button
+                  IconButton(
+                    icon: playerState.isBuffering
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          )
+                        : Icon(
+                            playerState.isPlaying ? Icons.pause_circle_filled_rounded : Icons.play_circle_fill_rounded,
+                            color: AppColors.primary,
+                            size: 30,
+                          ),
+                    tooltip: playerState.isPlaying ? 'إيقاف مؤقت' : 'تشغيل',
+                    onPressed: () => ref.read(audioPlayerProvider.notifier).playOrPause(),
+                  ),
+                  const SizedBox(height: 4),
+
+                  // Next
+                  IconButton(
+                    icon: const Icon(Icons.skip_next_rounded, color: Colors.white, size: 22),
+                    tooltip: 'التالي',
+                    onPressed: () => ref.read(audioPlayerProvider.notifier).next(),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       );
     }
 
-    // Expanded Mode: Full Desktop Controller Sidebar
-    return Align(
-      alignment: Alignment.centerRight,
+    // Expanded Mode: Full Desktop Controller
+    return Positioned(
+      left: currentLeft,
+      top: currentTop,
       child: Container(
         width: 290,
-        margin: const EdgeInsets.only(right: 14, top: 20, bottom: 70),
         decoration: BoxDecoration(
           color: const Color(0xFF141414).withAlpha(245),
           borderRadius: BorderRadius.circular(22),
@@ -118,7 +157,7 @@ class _DesktopSideControllerState extends ConsumerState<DesktopSideController> {
             BoxShadow(
               color: Colors.black.withAlpha(160),
               blurRadius: 22,
-              offset: const Offset(-4, 6),
+              offset: const Offset(0, 6),
             ),
           ],
         ),
@@ -127,57 +166,83 @@ class _DesktopSideControllerState extends ConsumerState<DesktopSideController> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Controller Header
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                decoration: const BoxDecoration(
-                  color: Color(0xFF1B1B1B),
-                  border: Border(bottom: BorderSide(color: Color(0xFF262626), width: 0.8)),
-                ),
-                child: Row(
-                  children: [
-                    // Official Logo
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(6),
-                      child: Image.asset(
-                        'assets/images/logo.png',
-                        width: 24,
-                        height: 24,
-                        fit: BoxFit.contain,
-                      ),
+              // Controller Header (Draggable Handle)
+              GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onPanUpdate: (details) {
+                  setState(() {
+                    _position = Offset(
+                      _position!.dx + details.delta.dx,
+                      _position!.dy + details.delta.dy,
+                    );
+                  });
+                },
+                child: MouseRegion(
+                  cursor: SystemMouseCursors.move,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFF1B1B1B),
+                      border: Border(bottom: BorderSide(color: Color(0xFF262626), width: 0.8)),
                     ),
-                    const SizedBox(width: 8),
-                    const Expanded(
-                      child: Text(
-                        'تحكم مازيكتي',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
+                    child: Row(
+                      children: [
+                        const Icon(Icons.drag_indicator_rounded, color: Colors.white38, size: 20),
+                        const SizedBox(width: 4),
+                        // Official Logo
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(6),
+                          child: Image.asset(
+                            'assets/images/logo.png',
+                            width: 22,
+                            height: 22,
+                            fit: BoxFit.contain,
+                          ),
                         ),
-                      ),
+                        const SizedBox(width: 8),
+                        const Expanded(
+                          child: Text(
+                            'تحكم مازيكتي',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                        // Detach to Desktop Floating Window
+                        IconButton(
+                          icon: const Icon(Icons.picture_in_picture_alt_rounded, color: Colors.white70, size: 18),
+                          tooltip: 'فصل إلى نافذة عائمة على سطح المكتب',
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                          onPressed: () {
+                            ref.read(desktopModeProvider.notifier).switchToMiniPlayer();
+                          },
+                        ),
+                        // Expand full player
+                        IconButton(
+                          icon: const Icon(Icons.open_in_full_rounded, color: Colors.white70, size: 16),
+                          tooltip: 'فتح المشغل بالحجم الكامل',
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                          onPressed: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(builder: (_) => const FullPlayerScreen()),
+                            );
+                          },
+                        ),
+                        // Collapse button
+                        IconButton(
+                          icon: const Icon(Icons.chevron_right_rounded, color: Colors.white70, size: 20),
+                          tooltip: 'تصغير اللوحة',
+                          padding: EdgeInsets.zero,
+                          constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                          onPressed: () => setState(() => _isCollapsed = true),
+                        ),
+                      ],
                     ),
-                    // Expand full player
-                    IconButton(
-                      icon: const Icon(Icons.open_in_full_rounded, color: Colors.white70, size: 18),
-                      tooltip: 'فتح المشغل بالحجم الكامل',
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(minWidth: 30, minHeight: 30),
-                      onPressed: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(builder: (_) => const FullPlayerScreen()),
-                        );
-                      },
-                    ),
-                    // Collapse button
-                    IconButton(
-                      icon: const Icon(Icons.chevron_right_rounded, color: Colors.white70, size: 22),
-                      tooltip: 'تصغير اللوحة',
-                      padding: EdgeInsets.zero,
-                      constraints: const BoxConstraints(minWidth: 30, minHeight: 30),
-                      onPressed: () => setState(() => _isCollapsed = true),
-                    ),
-                  ],
+                  ),
                 ),
               ),
 

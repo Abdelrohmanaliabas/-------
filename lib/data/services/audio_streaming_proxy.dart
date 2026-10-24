@@ -49,10 +49,15 @@ class AudioStreamingProxy {
     }
   }
 
-  /// Returns the proxy URL for a given YouTube video ID.
+  /// Returns the proxy URL for a given YouTube video ID with native .m4a audio container hint.
   static String getStreamUrl(String videoId) {
     assert(_port > 0, 'AudioStreamingProxy.ensureStarted() must be called first');
-    return 'http://127.0.0.1:$_port/stream?v=$videoId';
+    return 'http://127.0.0.1:$_port/stream.m4a?v=$videoId';
+  }
+
+  /// Returns the direct CDN stream URL for a given YouTube video ID if available.
+  static String? getDirectStreamUrl(String videoId) {
+    return _streamInfoCache[videoId]?.url.toString();
   }
 
   /// Returns the proxy URL for a given Song.
@@ -172,11 +177,13 @@ class AudioStreamingProxy {
         return;
       }
 
-      // Default route: /stream?v=VIDEO_ID
-      final videoId = req.uri.queryParameters['v'];
-      if (videoId != null && videoId.isNotEmpty) {
-        await _serveYouTubeStream(req, videoId);
-        return;
+      // Stream route: /stream or /stream.m4a or /stream.mp3
+      if (req.uri.path == '/stream' || req.uri.path == '/stream.m4a' || req.uri.path == '/stream.mp3') {
+        final videoId = req.uri.queryParameters['v'];
+        if (videoId != null && videoId.isNotEmpty) {
+          await _serveYouTubeStream(req, videoId);
+          return;
+        }
       }
 
       req.response.statusCode = HttpStatus.badRequest;
@@ -209,13 +216,17 @@ class AudioStreamingProxy {
       req.response.headers.set(HttpHeaders.contentLengthHeader, contentLength.toString());
       req.response.headers.set(HttpHeaders.contentTypeHeader, 'audio/mpeg');
 
-      await req.response.addStream(file.openRead(start, clampedEnd + 1));
+      if (req.method != 'HEAD') {
+        await req.response.addStream(file.openRead(start, clampedEnd + 1));
+      }
     } else {
       req.response.statusCode = HttpStatus.ok;
       req.response.headers.set(HttpHeaders.acceptRangesHeader, 'bytes');
       req.response.headers.set(HttpHeaders.contentLengthHeader, length.toString());
       req.response.headers.set(HttpHeaders.contentTypeHeader, 'audio/mpeg');
-      await req.response.addStream(file.openRead());
+      if (req.method != 'HEAD') {
+        await req.response.addStream(file.openRead());
+      }
     }
     await req.response.close();
   }
@@ -248,27 +259,30 @@ class AudioStreamingProxy {
   }
 
   static Future<void> _pipeRemoteUrl(HttpRequest req, String targetUrl) async {
-    final upstreamReq = http.Request('GET', Uri.parse(targetUrl));
     final rangeHeader = req.headers.value('range');
-    if (rangeHeader != null && rangeHeader.isNotEmpty) {
-      upstreamReq.headers['Range'] = rangeHeader;
-    }
+    final isHead = req.method == 'HEAD';
+    final upstreamReq = http.Request(isHead ? 'HEAD' : 'GET', Uri.parse(targetUrl));
+    
+    // GoogleVideo requires Range and modern User-Agent to avoid 403 Forbidden
+    upstreamReq.headers['Range'] = (rangeHeader != null && rangeHeader.isNotEmpty) ? rangeHeader : 'bytes=0-';
     upstreamReq.headers['User-Agent'] =
-        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/96.0.4664.18 Safari/537.36';
+        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 
     final streamedRes = await _httpClient.send(upstreamReq);
     req.response.statusCode = streamedRes.statusCode;
+    req.response.headers.set(HttpHeaders.acceptRangesHeader, 'bytes');
+    req.response.headers.set(HttpHeaders.contentTypeHeader, 'audio/mp4');
+
     streamedRes.headers.forEach((name, value) {
       final lower = name.toLowerCase();
-      if (lower == 'content-type' ||
-          lower == 'content-length' ||
-          lower == 'content-range' ||
-          lower == 'accept-ranges') {
+      if (lower == 'content-length' || lower == 'content-range') {
         req.response.headers.set(name, value);
       }
     });
 
-    await req.response.addStream(streamedRes.stream);
+    if (!isHead) {
+      await req.response.addStream(streamedRes.stream);
+    }
     await req.response.close();
   }
 

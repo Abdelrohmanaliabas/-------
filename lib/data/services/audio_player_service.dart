@@ -160,16 +160,18 @@ class AudioPlayerService {
       }
     }
 
-    // 3. Direct Full Stream / CDN (SoundCloud full MP3, Archive, Apple CDN, Deezer, etc.)
+    // 3. Direct Full Stream / CDN (SoundCloud full progressive MP3, direct full URLs)
     // Plays instantly without proxy, without YouTube, and without 403 Forbidden!
     if (resolvedAudio.url.isNotEmpty &&
+        !resolvedAudio.url.contains('itunes-assets') &&
+        !resolvedAudio.url.contains('apple.com') &&
+        !resolvedAudio.url.contains('preview') &&
         (resolvedAudio.source == 'soundcloud_full' ||
             resolvedAudio.source == 'direct_full' ||
             resolvedAudio.source == 'direct_cdn' ||
-            resolvedAudio.source == 'itunes_cdn' ||
             resolvedAudio.source == 'direct_url' ||
             resolvedAudio.videoId == null)) {
-      debugPrint('▶️ Playing direct stream URL for "${song.title}": ${resolvedAudio.url}');
+      debugPrint('▶️ Playing direct full stream URL for "${song.title}": ${resolvedAudio.url}');
       return AudioSource.uri(
         Uri.parse(resolvedAudio.url),
         tag: _buildMediaItem(enrichedSong),
@@ -221,11 +223,14 @@ class AudioPlayerService {
 
       if (preloaded && ytVideoIdStr != null) {
         playbackUrl = AudioStreamingProxy.getStreamUrl(ytVideoIdStr);
-        debugPrint('🔀 Routing "${song.title}" via proxy (videoId: $ytVideoIdStr)');
+        debugPrint('🔀 Routing "${song.title}" via local streaming proxy (videoId: $ytVideoIdStr)');
       } else if (song.audioUrl.isNotEmpty &&
-          (song.audioUrl.startsWith('http://') || song.audioUrl.startsWith('https://'))) {
+          (song.audioUrl.startsWith('http://') || song.audioUrl.startsWith('https://')) &&
+          !song.audioUrl.contains('itunes-assets') &&
+          !song.audioUrl.contains('apple.com') &&
+          !song.audioUrl.contains('preview')) {
         playbackUrl = song.audioUrl;
-        debugPrint('▶️ Proxy preload failed; falling back to direct song.audioUrl for "${song.title}"');
+        debugPrint('▶️ Proxy preload failed; falling back to direct full song.audioUrl for "${song.title}"');
       } else {
         throw Exception('تعذّر تحميل بيانات البث لـ "${song.title}"');
       }

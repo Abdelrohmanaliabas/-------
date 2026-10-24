@@ -56,14 +56,32 @@ class _FullPlayerScreenState extends ConsumerState<FullPlayerScreen> {
     final currentMs = (_dragValue ?? position.inMilliseconds.toDouble())
         .clamp(0.0, maxMs > 0 ? maxMs : 1.0);
 
-    final screenWidth = MediaQuery.of(context).size.width;
-    final albumArtSize = screenWidth * 0.84;
+    final screenSize = MediaQuery.of(context).size;
+    final screenWidth = screenSize.width;
+    final screenHeight = screenSize.height;
+    final isDesktop = screenWidth >= 800;
+
+    // Responsive album art sizing: fit comfortably within screen height on all screens
+    final albumArtSize = (isDesktop
+            ? (screenHeight * 0.36).clamp(160.0, 320.0)
+            : (screenWidth * 0.76).clamp(160.0, screenHeight * 0.38))
+        .toDouble();
 
     return Scaffold(
       backgroundColor: const Color(0xFF030303),
       body: SafeArea(
-        child: Column(
-          children: [
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 540),
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return SingleChildScrollView(
+                  physics: const ClampingScrollPhysics(),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                    child: IntrinsicHeight(
+                      child: Column(
+                        children: [
             // Top Bar: Down Chevron, Video/Audio Mode Toggle, Cast & 3-Dots
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
@@ -502,7 +520,14 @@ class _FullPlayerScreenState extends ConsumerState<FullPlayerScreen> {
                 ),
               ),
             ),
-          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
         ),
       ),
     );
