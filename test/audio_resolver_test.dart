@@ -54,7 +54,7 @@ void main() {
     );
 
     final resolved = await SongAudioResolver.resolveAudio(song);
-    expect(resolved.source, anyOf('soundcloud_full', 'known_hit', 'innertube', 'youtube'));
+    expect(resolved.source, anyOf('albumaty', 'soundcloud_full', 'known_hit', 'innertube', 'youtube'));
     expect(resolved.videoId != null || resolved.url.isNotEmpty, isTrue);
     expect(resolved.duration!.inSeconds, greaterThan(120)); // Full song, NOT 30 seconds!
   });

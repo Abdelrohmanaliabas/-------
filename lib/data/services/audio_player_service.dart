@@ -81,25 +81,21 @@ class AudioPlayerService {
   Stream<bool> get shuffleModeEnabledStream => _player.shuffleModeEnabledStream;
 
   void _initSubscriptions() {
-    _player.currentIndexStream.listen((index) {
-      if (index != null && index >= 0 && index < _queue.length && index != _currentIndex) {
-        _currentIndex = index;
-        final current = _queue[index];
-        _currentSongController.add(current);
-        ListeningHistoryService.recordSongPlayed(current);
-        _preloadNextSong();
-      }
-    });
-
     _player.playerStateStream.listen((state) {
       if (state.processingState == ProcessingState.completed) {
+        final pos = _player.position;
+        final dur = _player.duration;
+        // Prevent false completion events from native Windows player during load or errors
+        if (dur == null || dur.inSeconds <= 5 || pos.inSeconds < (dur.inSeconds - 4)) {
+          return;
+        }
         if (_currentIndex >= 0 && _currentIndex < _queue.length) {
           ListeningHistoryService.recordSongCompleted(_queue[_currentIndex]);
         }
         if (_player.loopMode == LoopMode.one) {
           _player.seek(Duration.zero);
           _player.play();
-        } else if (_player.hasNext) {
+        } else if (_currentIndex < _queue.length - 1) {
           skipToNext();
         } else if (_player.loopMode == LoopMode.all && _queue.isNotEmpty) {
           skipToIndex(0);
@@ -160,13 +156,11 @@ class AudioPlayerService {
       }
     }
 
-    // 3. Direct Full Stream / CDN (SoundCloud full progressive MP3, direct full URLs)
+    // 3. Direct Full Stream / CDN (Albumaty full MP3, SoundCloud, direct full URLs)
     // Plays instantly without proxy, without YouTube, and without 403 Forbidden!
     if (resolvedAudio.url.isNotEmpty &&
-        !resolvedAudio.url.contains('itunes-assets') &&
-        !resolvedAudio.url.contains('apple.com') &&
-        !resolvedAudio.url.contains('preview') &&
-        (resolvedAudio.source == 'soundcloud_full' ||
+        (resolvedAudio.source == 'albumaty' ||
+            resolvedAudio.source == 'soundcloud_full' ||
             resolvedAudio.source == 'direct_full' ||
             resolvedAudio.source == 'direct_cdn' ||
             resolvedAudio.source == 'direct_url' ||
@@ -221,16 +215,13 @@ class AudioPlayerService {
         }
       }
 
-      if (preloaded && ytVideoIdStr != null) {
+      if (ytVideoIdStr != null && ytVideoIdStr.isNotEmpty) {
         playbackUrl = AudioStreamingProxy.getStreamUrl(ytVideoIdStr);
         debugPrint('🔀 Routing "${song.title}" via local streaming proxy (videoId: $ytVideoIdStr)');
       } else if (song.audioUrl.isNotEmpty &&
-          (song.audioUrl.startsWith('http://') || song.audioUrl.startsWith('https://')) &&
-          !song.audioUrl.contains('itunes-assets') &&
-          !song.audioUrl.contains('apple.com') &&
-          !song.audioUrl.contains('preview')) {
+          (song.audioUrl.startsWith('http://') || song.audioUrl.startsWith('https://'))) {
         playbackUrl = song.audioUrl;
-        debugPrint('▶️ Proxy preload failed; falling back to direct full song.audioUrl for "${song.title}"');
+        debugPrint('▶️ Direct fallback to song.audioUrl for "${song.title}": $playbackUrl');
       } else {
         throw Exception('تعذّر تحميل بيانات البث لـ "${song.title}"');
       }
@@ -265,6 +256,10 @@ class AudioPlayerService {
     final song = _queue[_currentIndex];
     _currentSongController.add(song);
     ListeningHistoryService.recordSongPlayed(song);
+
+    try {
+      await _player.stop();
+    } catch (_) {}
 
     try {
       final source = await _createAudioSource(song, isFallback: false);
@@ -369,7 +364,7 @@ class AudioPlayerService {
     int nextIdx;
     if (_currentIndex < _queue.length - 1) {
       nextIdx = _currentIndex + 1;
-    } else if (_player.loopMode == LoopMode.all || _queue.length > 1) {
+    } else if (_player.loopMode == LoopMode.all) {
       nextIdx = 0;
     } else {
       return;

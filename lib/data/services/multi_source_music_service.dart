@@ -95,7 +95,7 @@ class MultiSourceMusicApiService implements MusicApiService {
       artistId: 'artist_tamer_ashour',
       album: 'هيجيلي موجوع',
       artworkUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/bc/5b/a6/bc5ba615-b439-9a1a-28c9-fcb2fadd31f2/3617382720432_cover.jpg/600x600bb.jpg',
-      audioUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/fd/04/95/fd0495d2-b436-b663-6c36-f0d5b259ec0b/mzaf_2777922666952326127.plus.aac.p.m4a',
+      audioUrl: 'https://serv100.albumaty.com/song2022/Albumaty.Com_tamr_aashwr_hygyly_mwgwa.mp3',
       duration: Duration(minutes: 4, seconds: 12),
       genre: 'طرب معاصر',
       playsCount: 55000000,
@@ -109,7 +109,7 @@ class MultiSourceMusicApiService implements MusicApiService {
       artistId: 'artist_hamza_namira',
       album: 'رايق',
       artworkUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/9e/eb/bd/9eebbd9e-2ceb-0184-fca8-1a08beaf4c9d/artwork.jpg/600x600bb.jpg',
-      audioUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/3f/b9/77/3fb9778f-d9ce-4c35-878e-3e2254267b0b/mzaf_6812347307800652075.plus.aac.p.m4a',
+      audioUrl: 'https://serv100.albumaty.com/song2022/Albumaty.Com_hmzh_nmrh_ryah_alhyat.mp3',
       duration: Duration(minutes: 4, seconds: 35),
       genre: 'طرب معاصر',
       playsCount: 42000000,
@@ -123,7 +123,7 @@ class MultiSourceMusicApiService implements MusicApiService {
       artistId: 'artist_wegz',
       album: 'البخت - سينجل',
       artworkUrl: 'https://is1-ssl.mzstatic.com/image/thumb/Music211/v4/e2/07/3b/e2073b69-e9a9-0377-2a37-8eabccbc8ef5/6221216329950.jpg/600x600bb.jpg',
-      audioUrl: 'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview221/v4/e2/b0/1d/e2b01d30-7b5f-d520-4f3e-e1e250899b12/mzaf_2863315495467483634.plus.aac.p.m4a',
+      audioUrl: 'https://serv100.albumaty.com/songs_2020/Albumaty.Com_wygz_albkht.mp3',
       duration: Duration(minutes: 3, seconds: 50),
       genre: 'تراب عربي',
       playsCount: 35000000,
@@ -401,7 +401,7 @@ class MultiSourceMusicApiService implements MusicApiService {
             albumMap['cover_medium'] as String? ??
             albumMap['cover'] as String? ??
             artistMap['picture_medium'] as String? ??
-            'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600';
+            'https://cdn-images.dzcdn.net/images/cover/55cb6633ae9b1a4dfa168b72707747d7/500x500-000000-80-0-0.jpg';
 
         return Song(
           id: 'deezer_${item['id']}',
@@ -449,7 +449,7 @@ class MultiSourceMusicApiService implements MusicApiService {
         final preview = item['preview'] as String? ?? '';
         final artwork = albumMap['cover_big'] as String? ??
             albumMap['cover_medium'] as String? ??
-            'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600';
+            'https://cdn-images.dzcdn.net/images/cover/55cb6633ae9b1a4dfa168b72707747d7/500x500-000000-80-0-0.jpg';
 
         return Song(
           id: 'deezer_artist_top_${item['id']}',
@@ -485,7 +485,7 @@ class MultiSourceMusicApiService implements MusicApiService {
         final cover = item['cover_big'] as String? ??
             item['cover_medium'] as String? ??
             item['cover'] as String? ??
-            'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600';
+            'https://cdn-images.dzcdn.net/images/cover/55cb6633ae9b1a4dfa168b72707747d7/500x500-000000-80-0-0.jpg';
 
         return Album(
           id: 'deezer_album_${item['id']}',
@@ -517,7 +517,7 @@ class MultiSourceMusicApiService implements MusicApiService {
         final pic = item['picture_big'] as String? ??
             item['picture_medium'] as String? ??
             item['picture'] as String? ??
-            'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=600';
+            'https://cdn-images.dzcdn.net/images/artist/04381e254ff4ad4c43ac62d7483fea0f/500x500-000000-80-0-0.jpg';
 
         return Artist(
           id: 'deezer_artist_${item['id']}',
@@ -558,7 +558,7 @@ class MultiSourceMusicApiService implements MusicApiService {
           artistId: item['artistId']?.toString(),
           album: item['collectionName'] as String? ?? 'ألبوم',
           albumId: item['collectionId']?.toString(),
-          artworkUrl: artworkHigh.isNotEmpty ? artworkHigh : 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600',
+          artworkUrl: artworkHigh.isNotEmpty ? artworkHigh : 'https://cdn-images.dzcdn.net/images/cover/55cb6633ae9b1a4dfa168b72707747d7/500x500-000000-80-0-0.jpg',
           audioUrl: preview,
           duration: Duration(milliseconds: item['trackTimeMillis'] as int? ?? 180000),
           genre: item['primaryGenreName'] as String? ?? 'موسيقى عربية',
@@ -599,7 +599,7 @@ class MultiSourceMusicApiService implements MusicApiService {
           title: item['collectionName'] as String? ?? '',
           artist: item['artistName'] as String? ?? '',
           artistId: item['artistId']?.toString(),
-          artworkUrl: art.isNotEmpty ? art : 'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600',
+          artworkUrl: art.isNotEmpty ? art : 'https://cdn-images.dzcdn.net/images/cover/55cb6633ae9b1a4dfa168b72707747d7/500x500-000000-80-0-0.jpg',
           songsCount: item['trackCount'] as int? ?? 1,
           releaseYear: (item['releaseDate'] as String?)?.split('-').first,
         );
@@ -674,7 +674,7 @@ class MultiSourceMusicApiService implements MusicApiService {
           title: rec['title'] as String? ?? 'أغنية',
           artist: artistName,
           album: releaseTitle,
-          artworkUrl: 'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600',
+          artworkUrl: 'https://cdn-images.dzcdn.net/images/cover/55cb6633ae9b1a4dfa168b72707747d7/500x500-000000-80-0-0.jpg',
           audioUrl: '',
           duration: Duration(milliseconds: length),
           genre: 'موسيقى',
@@ -1521,7 +1521,7 @@ class MultiSourceMusicApiService implements MusicApiService {
         final remotePlaylists = list.map((item) {
           final pic = item['picture_big'] as String? ??
               item['picture_medium'] as String? ??
-              'https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=600';
+              'https://cdn-images.dzcdn.net/images/cover/55cb6633ae9b1a4dfa168b72707747d7/500x500-000000-80-0-0.jpg';
           return Playlist(
             id: 'deezer_pl_${item['id']}',
             name: item['title'] as String? ?? 'قائمة تشغيل',

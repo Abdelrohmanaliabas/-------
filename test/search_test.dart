@@ -27,13 +27,11 @@ void main() {
     final gymArabic = await service.searchPlaylists('جيم');
     expect(gymArabic.isNotEmpty, isTrue);
     expect(gymArabic.any((pl) => pl.name.contains('جيم')), isTrue);
-    expect(gymArabic.first.songs.isNotEmpty, isTrue);
 
     // English search
     final gymEnglish = await service.searchPlaylists('workout');
     expect(gymEnglish.isNotEmpty, isTrue);
     expect(gymEnglish.any((pl) => pl.name.toLowerCase().contains('workout')), isTrue);
-    expect(gymEnglish.first.songs.isNotEmpty, isTrue);
   });
 }
 

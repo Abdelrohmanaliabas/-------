@@ -235,40 +235,165 @@ class AudioStreamingProxy {
     AudioOnlyStreamInfo? bestStream = _streamInfoCache[videoId];
     if (bestStream == null) {
       debugPrint('⏳ On-demand manifest fetch for $videoId');
-      final manifest = await _ytClient.videos.streamsClient
-          .getManifest(videoId, requireWatchPage: false)
-          .timeout(const Duration(seconds: 15));
+      try {
+        final manifest = await _ytClient.videos.streamsClient
+            .getManifest(videoId, requireWatchPage: false)
+            .timeout(const Duration(seconds: 15));
 
-      final audioStreams = manifest.audioOnly;
-      if (audioStreams.isEmpty) {
-        req.response.statusCode = HttpStatus.notFound;
+        final audioStreams = manifest.audioOnly;
+        if (audioStreams.isEmpty) {
+          req.response.statusCode = HttpStatus.notFound;
+          await req.response.close();
+          return;
+        }
+
+        final mp4Streams = audioStreams
+            .where((s) => s.container.name.toLowerCase() == 'mp4')
+            .toList();
+        bestStream = mp4Streams.isNotEmpty
+            ? mp4Streams.withHighestBitrate()
+            : audioStreams.withHighestBitrate();
+        _streamInfoCache[videoId] = bestStream;
+      } catch (e) {
+        debugPrint('On-demand manifest fetch error for $videoId: $e');
+        req.response.statusCode = HttpStatus.badGateway;
         await req.response.close();
         return;
       }
-
-      final mp4Streams = audioStreams
-          .where((s) => s.container.name.toLowerCase() == 'mp4')
-          .toList();
-      bestStream = mp4Streams.isNotEmpty
-          ? mp4Streams.withHighestBitrate()
-          : audioStreams.withHighestBitrate();
-      _streamInfoCache[videoId] = bestStream;
     }
 
-    await _pipeRemoteUrl(req, bestStream.url.toString());
+    await _pipeRemoteUrl(
+      req,
+      bestStream.url.toString(),
+      totalBytes: bestStream.size.totalBytes,
+      videoId: videoId,
+    );
   }
 
-  static Future<void> _pipeRemoteUrl(HttpRequest req, String targetUrl) async {
+  static Future<void> _pipeRemoteUrl(
+    HttpRequest req,
+    String targetUrl, {
+    int? totalBytes,
+    String? videoId,
+  }) async {
     final rangeHeader = req.headers.value('range');
     final isHead = req.method == 'HEAD';
-    final upstreamReq = http.Request(isHead ? 'HEAD' : 'GET', Uri.parse(targetUrl));
-    
-    // GoogleVideo requires Range and modern User-Agent to avoid 403 Forbidden
+
+    // HEAD handling: Windows Media Foundation probes HEAD to inspect media headers.
+    // YouTube CDN actively returns 403 Forbidden to HEAD requests.
+    // We respond directly to HEAD using the known totalBytes or probe GET with bytes=0-0.
+    if (isHead) {
+      req.response.statusCode = HttpStatus.ok;
+      req.response.headers.set(HttpHeaders.acceptRangesHeader, 'bytes');
+      req.response.headers.set(HttpHeaders.contentTypeHeader, 'audio/mp4');
+      if (totalBytes != null && totalBytes > 0) {
+        req.response.headers.set(HttpHeaders.contentLengthHeader, totalBytes.toString());
+      }
+      await req.response.close();
+      return;
+    }
+
+    int start = 0;
+    int? end;
+    if (rangeHeader != null && rangeHeader.startsWith('bytes=')) {
+      final spec = rangeHeader.substring(6).trim();
+      final parts = spec.split('-');
+      if (parts[0].isNotEmpty) {
+        start = int.tryParse(parts[0]) ?? 0;
+      }
+      if (parts.length > 1 && parts[1].isNotEmpty) {
+        end = int.tryParse(parts[1]);
+      }
+    }
+
+    if (totalBytes != null && totalBytes > 0) {
+      end ??= totalBytes - 1;
+      end = end.clamp(start, totalBytes - 1);
+      final contentLength = end - start + 1;
+
+      req.response.statusCode = (rangeHeader != null) ? HttpStatus.partialContent : HttpStatus.ok;
+      req.response.headers.set(HttpHeaders.acceptRangesHeader, 'bytes');
+      req.response.headers.set(HttpHeaders.contentTypeHeader, 'audio/mp4');
+      req.response.headers.set(HttpHeaders.contentLengthHeader, contentLength.toString());
+      if (rangeHeader != null) {
+        req.response.headers.set(HttpHeaders.contentRangeHeader, 'bytes $start-$end/$totalBytes');
+      }
+
+      // YouTube CDN throttles/rejects open or large ranges (>384KB) with 403 Forbidden.
+      // We chunk upstream in 256KB slices and stream seamlessly to the player.
+      const chunkSize = 256 * 1024;
+      int current = start;
+
+      try {
+        while (current <= end) {
+          final chunkEnd = (current + chunkSize - 1).clamp(current, end);
+          final upstreamReq = http.Request('GET', Uri.parse(targetUrl));
+          upstreamReq.headers['Range'] = 'bytes=$current-$chunkEnd';
+          upstreamReq.headers['User-Agent'] =
+              'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+
+          var chunkRes = await _httpClient.send(upstreamReq);
+          if (chunkRes.statusCode == 403 && videoId != null) {
+            debugPrint('Proxy received 403 for $videoId at byte $current, refreshing manifest…');
+            evictCache(videoId);
+            try {
+              final manifest = await _ytClient.videos.streamsClient
+                  .getManifest(videoId, requireWatchPage: false)
+                  .timeout(const Duration(seconds: 10));
+              final audioStreams = manifest.audioOnly;
+              final mp4Streams = audioStreams
+                  .where((s) => s.container.name.toLowerCase() == 'mp4')
+                  .toList();
+              final refreshedStream = mp4Streams.isNotEmpty
+                  ? mp4Streams.withHighestBitrate()
+                  : audioStreams.withHighestBitrate();
+              _streamInfoCache[videoId] = refreshedStream;
+              targetUrl = refreshedStream.url.toString();
+
+              final retryReq = http.Request('GET', Uri.parse(targetUrl));
+              retryReq.headers['Range'] = 'bytes=$current-$chunkEnd';
+              retryReq.headers['User-Agent'] =
+                  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
+              chunkRes = await _httpClient.send(retryReq);
+            } catch (e) {
+              debugPrint('Proxy refresh failed: $e');
+              break;
+            }
+          }
+
+          if (chunkRes.statusCode != 200 && chunkRes.statusCode != 206) {
+            debugPrint('Upstream chunk failed with status ${chunkRes.statusCode}');
+            break;
+          }
+
+          await req.response.addStream(chunkRes.stream);
+          current = chunkEnd + 1;
+        }
+      } catch (_) {
+        // Client interrupted stream (scrubbing/skipping)
+      } finally {
+        try {
+          await req.response.close();
+        } catch (_) {}
+      }
+      return;
+    }
+
+    final upstreamReq = http.Request('GET', Uri.parse(targetUrl));
     upstreamReq.headers['Range'] = (rangeHeader != null && rangeHeader.isNotEmpty) ? rangeHeader : 'bytes=0-';
     upstreamReq.headers['User-Agent'] =
         'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 
-    final streamedRes = await _httpClient.send(upstreamReq);
+    http.StreamedResponse streamedRes;
+    try {
+      streamedRes = await _httpClient.send(upstreamReq);
+    } catch (e) {
+      debugPrint('Proxy upstream send error: $e');
+      req.response.statusCode = HttpStatus.badGateway;
+      await req.response.close();
+      return;
+    }
+
     req.response.statusCode = streamedRes.statusCode;
     req.response.headers.set(HttpHeaders.acceptRangesHeader, 'bytes');
     req.response.headers.set(HttpHeaders.contentTypeHeader, 'audio/mp4');
@@ -280,10 +405,15 @@ class AudioStreamingProxy {
       }
     });
 
-    if (!isHead) {
+    try {
       await req.response.addStream(streamedRes.stream);
+    } catch (_) {
+      // Client interrupted stream (scrubbing/skipping)
+    } finally {
+      try {
+        await req.response.close();
+      } catch (_) {}
     }
-    await req.response.close();
   }
 
   static void dispose() {

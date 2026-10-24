@@ -51,7 +51,7 @@ class PlaylistRepositoryImpl implements PlaylistRepository {
       name: name,
       description: description,
       artworkUrl: artworkUrl ??
-          'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=600&auto=format&fit=crop&q=80',
+          'https://cdn-images.dzcdn.net/images/cover/55cb6633ae9b1a4dfa168b72707747d7/500x500-000000-80-0-0.jpg',
       songs: [],
       isCustom: true,
       createdAt: DateTime.now(),

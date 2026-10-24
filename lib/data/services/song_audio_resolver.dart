@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:youtube_explode_dart/youtube_explode_dart.dart';
 import '../../domain/models/song.dart';
+import 'albumaty_service.dart';
 
 /// Information regarding the resolved audio stream.
 class ResolvedAudioInfo {
@@ -170,7 +171,42 @@ class SongAudioResolver {
       }
     }
 
-    // 5. Fast InnerTube JSON Search (~300-600ms, real-time dynamic search with zero dead IDs)
+    // 4.5. Fast direct full MP3 stream via Albumaty (~500ms, direct crystal-clear MP3, 0 buffering, 0 proxy)
+    try {
+      final albumatyUrl = await AlbumatyService.resolveSongMp3(cleanTitle, cleanArtist);
+      if (albumatyUrl != null && albumatyUrl.isNotEmpty) {
+        final result = ResolvedAudioInfo(
+          url: albumatyUrl,
+          duration: song.duration,
+          source: 'albumaty',
+        );
+        _cache[cacheKey] = _CachedStream(
+          url: albumatyUrl,
+          duration: song.duration,
+          cachedAt: DateTime.now(),
+          source: 'albumaty',
+        );
+        debugPrint('🎧 Direct Albumaty full MP3 resolved for "${song.title}": $albumatyUrl');
+        return result;
+      }
+    } catch (e) {
+      debugPrint('Albumaty resolution error: $e');
+    }
+
+    // 5. Resolve FULL progressive MP3 via SoundCloud (direct HTTPS CDN, skips proxy)
+    final scInfo = await _resolveSoundCloudTrack(cleanTitle, cleanArtist);
+    if (scInfo != null) {
+      _cache[cacheKey] = _CachedStream(
+        url: scInfo.url,
+        duration: scInfo.duration ?? song.duration,
+        cachedAt: DateTime.now(),
+        source: 'soundcloud_full',
+      );
+      debugPrint('☁️ SoundCloud FULL song resolved for "${song.title}": ${scInfo.url}');
+      return scInfo;
+    }
+
+    // 6. Fast InnerTube JSON Search (~300-600ms, real-time dynamic search with zero dead IDs)
     final query = cleanArtist.isNotEmpty ? '$cleanTitle $cleanArtist' : cleanTitle;
     final innerTubeVideoId = await _searchYouTubeInnerTube(query);
     if (innerTubeVideoId != null && innerTubeVideoId.isNotEmpty) {
@@ -192,19 +228,6 @@ class SongAudioResolver {
         debugPrint('🚀 InnerTube resolved "$cleanTitle" → $innerTubeVideoId');
         return result;
       } catch (_) {}
-    }
-
-    // 6. Resolve FULL progressive MP3 via SoundCloud (skip HLS m3u8 on Windows as WinRT fails on it)
-    final scInfo = await _resolveSoundCloudTrack(cleanTitle, cleanArtist);
-    if (scInfo != null) {
-      _cache[cacheKey] = _CachedStream(
-        url: scInfo.url,
-        duration: scInfo.duration ?? song.duration,
-        cachedAt: DateTime.now(),
-        source: 'soundcloud_full',
-      );
-      debugPrint('☁️ SoundCloud FULL song resolved for "${song.title}": ${scInfo.url}');
-      return scInfo;
     }
 
     // 6. youtube_explode_dart search fallback (with fast timeout)
@@ -248,7 +271,7 @@ class SongAudioResolver {
   // ---------------------------------------------------------------------------
   // SoundCloud Full Song Resolver (~400ms for full-length 128kbps MP3 stream)
   // ---------------------------------------------------------------------------
-  static String _soundCloudClientId = 'dkevB9EsY4jIoSm8RfddPNUKyn6hurXF';
+  static String _soundCloudClientId = '3GKD969NJWD1eB6gvQJN0GnueYbcWszv';
   static DateTime? _scClientTime;
 
   static Future<String> _getSoundCloudClientId() async {
@@ -303,12 +326,10 @@ class SongAudioResolver {
               break;
             }
           }
-          if (selected == null && !Platform.isWindows) {
-            selected = media.firstWhere(
-              (t) => t['format']?['protocol'] == 'hls',
-              orElse: () => null,
-            );
-          }
+          selected ??= media.firstWhere(
+            (t) => t['format']?['protocol'] == 'hls',
+            orElse: () => null,
+          );
           if (selected == null) continue;
 
           final streamUrlEndpoint = selected['url'] as String?;
@@ -321,10 +342,6 @@ class SongAudioResolver {
             final streamData = jsonDecode(streamRes.body);
             final streamUrl = streamData['url'] as String?;
             if (streamUrl != null && streamUrl.isNotEmpty) {
-              if (Platform.isWindows && streamUrl.contains('.m3u8')) {
-                // Windows Media Foundation does not reliably stream signed HLS playlists
-                continue;
-              }
               return ResolvedAudioInfo(
                 url: streamUrl,
                 duration: duration,

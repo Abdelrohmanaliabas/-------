@@ -692,7 +692,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget _buildQuickPickRow(Song song, List<Song> playlist, int index) {
     return InkWell(
       onTap: () {
-        ref.read(audioPlayerProvider.notifier).playPlaylist(playlist, initialIndex: index);
+        ref.read(audioPlayerProvider.notifier).playSong(song, playlist: playlist, index: index);
       },
       borderRadius: BorderRadius.circular(10),
       child: Padding(

@@ -139,10 +139,19 @@ class AudioPlayerNotifier extends StateNotifier<PlayerStateData> {
 
   Future<void> playSong(Song song, {List<Song>? playlist, int? index}) async {
     if (playlist != null && playlist.isNotEmpty) {
-      final initialIdx = (index != null && index >= 0 && index < playlist.length)
+      int initialIdx = (index != null && index >= 0 && index < playlist.length && playlist[index].id == song.id)
           ? index
           : playlist.indexWhere((s) => s.id == song.id);
-      await playPlaylist(playlist, initialIndex: initialIdx >= 0 ? initialIdx : 0);
+      if (initialIdx == -1) {
+        initialIdx = playlist.indexWhere((s) =>
+            s.title.trim().toLowerCase() == song.title.trim().toLowerCase());
+      }
+      List<Song> targetPlaylist = playlist;
+      if (initialIdx == -1) {
+        targetPlaylist = [song, ...playlist.where((s) => s.id != song.id)];
+        initialIdx = 0;
+      }
+      await playPlaylist(targetPlaylist, initialIndex: initialIdx);
       return;
     }
 
